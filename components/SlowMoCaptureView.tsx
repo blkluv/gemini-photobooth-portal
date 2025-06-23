@@ -18,9 +18,8 @@ export const SlowMoCaptureView: React.FC<SlowMoCaptureViewProps> = ({ onVideoRec
   const [error, setError] = useState<string | null>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [progress, setProgress] = useState(0); // 0 to 100
+  const [progress, setProgress] = useState(0);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
-
 
   const startCamera = useCallback(async () => {
     setError(null);
@@ -28,38 +27,98 @@ export const SlowMoCaptureView: React.FC<SlowMoCaptureViewProps> = ({ onVideoRec
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { width: PHOTO_WIDTH, height: PHOTO_HEIGHT },
-          audio: true 
+          video: { 
+            width: PHOTO_WIDTH, 
+            height: PHOTO_HEIGHT,
+            frameRate: { ideal: 60, min: 30 } // Higher frame rate for better slow-mo
+          },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
         });
+
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.onloadedmetadata = () => {
             setIsCameraReady(true);
           };
         }
+
+        const options = { 
+          mimeType: 'video/webm;codecs=vp9,opus',
+          videoBitsPerSecond: 5000000 // 5 Mbps for higher quality slow-mo
+        };
         
-        mediaRecorderRef.current = new MediaRecorder(stream);
+        try {
+          mediaRecorderRef.current = new MediaRecorder(stream, options);
+        } catch (e) {
+          console.warn('VP9 not supported, falling back to default codec');
+          mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        }
+
         mediaRecorderRef.current.ondataavailable = (event) => {
+          console.debug('Slow-mo video data chunk:', { size: event.data.size, type: event.data.type });
           if (event.data.size > 0) {
             recordedChunksRef.current.push(event.data);
           }
         };
+
         mediaRecorderRef.current.onstop = () => {
-          const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-          const videoUrl = URL.createObjectURL(blob);
-          onVideoRecorded(videoUrl);
-          recordedChunksRef.current = []; 
+          console.debug('SlowMo MediaRecorder stopped, processing chunks:', recordedChunksRef.current.length);
+          try {
+            if (recordedChunksRef.current.length === 0) {
+              throw new Error('No video data was recorded');
+            }
+
+            // Try to create a blob with VP9 and opus codecs first
+            let blob;
+            try {
+              blob = new Blob(recordedChunksRef.current, { 
+                type: 'video/webm;codecs=vp9,opus' 
+              });
+            } catch (e) {
+              console.warn('Failed to create VP9 blob, falling back to default WebM');
+              blob = new Blob(recordedChunksRef.current, { 
+                type: 'video/webm' 
+              });
+            }
+
+            if (blob.size === 0) {
+              throw new Error('Created video blob is empty');
+            }
+            if (blob.size > 100 * 1024 * 1024) {
+              throw new Error('Recording exceeds 100MB size limit');
+            }
+
+            console.debug('Created slow-mo video blob:', {
+              size: blob.size,
+              type: blob.type,
+              chunks: recordedChunksRef.current.length
+            });
+
+            const videoUrl = URL.createObjectURL(blob);
+            console.debug('Created slow-mo video URL:', videoUrl);
+            onVideoRecorded(videoUrl);
+          } catch (error) {
+            console.error('Error processing slow-mo video:', error);
+            setError(`Failed to process video: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+          recordedChunksRef.current = []; // Clear for next recording
         };
 
       } catch (err) {
-        console.error("Error accessing media devices for Slow-Mo:", err);
+        console.error("Error accessing media devices for slow-mo:", err);
         let message = "Could not access camera or microphone. Please check permissions.";
         if ((err as Error).name === "NotAllowedError") {
-            message = "Access to camera and/or microphone denied. Please allow access in your browser settings.";
+          message = "Access to camera and/or microphone denied. Please allow access in your browser settings.";
         } else if ((err as Error).name === "NotFoundError") {
-            message = "No camera or microphone found. Please ensure they are connected and enabled.";
+          message = "No camera or microphone found. Please ensure they are connected and enabled.";
         } else if ((err as Error).name === "NotReadableError") {
-            message = "Camera or microphone is already in use or could not be accessed.";
+          message = "Camera or microphone is already in use or could not be accessed.";
+        } else if ((err as Error).name === "OverconstrainedError") {
+          message = "Your device does not support the required video quality for slow motion recording.";
         }
         setError(message);
       }
@@ -73,47 +132,80 @@ export const SlowMoCaptureView: React.FC<SlowMoCaptureViewProps> = ({ onVideoRec
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach(track => {
+          track.stop();
+          console.debug('Stopped video track:', track.label);
+        });
+        videoRef.current.srcObject = null;
       }
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-        mediaRecorderRef.current.stop();
+        try {
+          mediaRecorderRef.current.stop();
+          console.debug('Stopped MediaRecorder on cleanup');
+        } catch (error) {
+          console.error('Error stopping MediaRecorder:', error);
+        }
       }
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
       }
+      recordedChunksRef.current = [];
     };
   }, [startCamera]);
 
-
   const handleStartRecording = () => {
-    if (!mediaRecorderRef.current || !isCameraReady || isRecording) return;
+    if (!mediaRecorderRef.current || !isCameraReady || isRecording) {
+      console.warn('Cannot start slow-mo recording:', { 
+        hasMediaRecorder: !!mediaRecorderRef.current, 
+        isCameraReady, 
+        isRecording 
+      });
+      return;
+    }
 
     recordedChunksRef.current = [];
-    mediaRecorderRef.current.start();
-    setIsRecording(true);
-    setProgress(0);
-    
-    const startTime = Date.now();
-    recordingTimerRef.current = setInterval(() => {
+    try {
+      // Request data every 500ms (0.5 seconds) for smoother slow-mo
+      mediaRecorderRef.current.start(500);
+      console.debug('Started slow-mo recording with settings:', {
+        mimeType: mediaRecorderRef.current.mimeType,
+        state: mediaRecorderRef.current.state,
+        videoBitsPerSecond: mediaRecorderRef.current.videoBitsPerSecond
+      });
+      setIsRecording(true);
+      setProgress(0);
+      
+      const startTime = Date.now();
+      recordingTimerRef.current = setInterval(() => {
         const elapsedTime = Date.now() - startTime;
         const currentProgress = Math.min(100, (elapsedTime / (RECORDING_DURATION_S * 1000)) * 100);
         setProgress(currentProgress);
 
         if (elapsedTime >= RECORDING_DURATION_S * 1000) {
-            handleStopRecording();
+          handleStopRecording();
         }
-    }, 100); 
+      }, 100);
+    } catch (error) {
+      console.error('Failed to start slow-mo recording:', error);
+      setError(`Failed to start recording: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   const handleStopRecording = () => {
+    console.debug('Stopping slow-mo recording...');
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (error) {
+        console.error('Error stopping recording:', error);
+        setError(`Failed to stop recording: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
     }
     if (recordingTimerRef.current) {
       clearInterval(recordingTimerRef.current);
     }
     setIsRecording(false);
-    setProgress(100); 
+    setProgress(100);
   };
 
   return (

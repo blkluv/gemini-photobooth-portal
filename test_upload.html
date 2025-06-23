@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Video Upload</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .error { color: red; }
+        .success { color: green; }
+        pre {
+            background: #f5f5f5;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .status {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Test Video Upload</h2>
+    <div class="form-group">
+        <label>PHP Upload URL: </label>
+        <select id="uploadUrl">
+            <option value="http://localhost:8000/uploadvideo_and_qr.php">localhost:8000</option>
+            <option value="http://localhost:8080/uploadvideo_and_qr.php">localhost:8080</option>
+        </select>
+    </div>
+    <form id="uploadForm">
+        <div class="form-group">
+            <input type="file" name="video" accept="video/webm,video/mp4,video/quicktime,image/gif">
+        </div>
+        <button type="submit">Upload Video</button>
+    </form>
+    <div id="status" class="status"></div>
+    <pre id="result"></pre>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const uploadUrl = document.getElementById('uploadUrl').value;
+            const statusEl = document.getElementById('status');
+            const resultEl = document.getElementById('result');
+            
+            statusEl.className = 'status';
+            statusEl.textContent = 'Uploading...';
+            
+            try {
+                const response = await fetch(uploadUrl, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                resultEl.textContent = JSON.stringify(result, null, 2);
+                
+                if (result.success) {
+                    statusEl.className = 'status success';
+                    statusEl.textContent = 'Upload successful!';
+                } else {
+                    statusEl.className = 'status error';
+                    statusEl.textContent = 'Upload failed: ' + (result.message || 'Unknown error');
+                }
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = 'Error: ' + error.message;
+                resultEl.textContent = 'Error details:\n' + error.stack;
+            }
+        });
+    </script>
+</body>
+</html>

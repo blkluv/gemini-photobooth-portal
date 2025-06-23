@@ -2,10 +2,20 @@
 require_once(__DIR__ . '/upload_debug_functions.php');
 
 // Set appropriate headers for CORS and content type
-header("Access-Control-Allow-Origin: http://localhost:5173");
-header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Origin, Content-Type, X-Auth-Token, Authorization");
-header("Access-Control-Allow-Credentials: true");
+$allowed_origins = array(
+    'http://localhost:5173',  // Vite dev server
+    'http://localhost:8000',   // PHP test server
+    'https://eeelab.xyz'     // Production domain
+);
+
+$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+
+if (in_array($origin, $allowed_origins)) {
+    header("Access-Control-Allow-Origin: " . $origin);
+    header("Access-Control-Allow-Methods: POST, OPTIONS");
+    header("Access-Control-Allow-Headers: Origin, Content-Type, X-Auth-Token, Authorization");
+    header("Access-Control-Allow-Credentials: true");
+}
 header("Content-Type: application/json");
 
 // Handle preflight requests
@@ -38,6 +48,26 @@ if (!isset($_FILES['video'])) {
 }
 
 $uploadedFile = $_FILES['video'];
+
+// Check for upload errors
+if ($uploadedFile['error'] !== UPLOAD_ERR_OK) {
+    $errorMessage = match($uploadedFile['error']) {
+        UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the upload_max_filesize directive',
+        UPLOAD_ERR_FORM_SIZE => 'The uploaded file exceeds the MAX_FILE_SIZE directive',
+        UPLOAD_ERR_PARTIAL => 'The uploaded file was only partially uploaded',
+        UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+        UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder',
+        UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+        UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload',
+        default => 'Unknown upload error'
+    };
+    log_debug("Upload error", [
+        'error_code' => $uploadedFile['error'],
+        'error_message' => $errorMessage
+    ]);
+    json_error_response($errorMessage, null, 400);
+}
+
 $originalName = $uploadedFile['name'];
 $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
 
@@ -49,10 +79,30 @@ log_debug("Upload attempt", [
     'type' => $uploadedFile['type'],
     'error' => $uploadedFile['error']
 ]);
-    // Validate file format
-    if (!in_array($ext, ['mp4', 'webm', 'mov', 'gif'])) {
+    // Validate file format and mime type
+    $allowedTypes = [
+        'webm' => ['video/webm'],
+        'mp4' => ['video/mp4'],
+        'mov' => ['video/quicktime'],
+        'gif' => ['image/gif']
+    ];
+
+    if (!array_key_exists($ext, $allowedTypes)) {
         log_debug("Rejected: unsupported format", ['ext' => $ext]);
-        json_error_response('Unsupported video format. Allowed: mp4, webm, mov, gif.');
+        json_error_response('Unsupported video format. Allowed: webm, mp4, mov, gif');
+    }
+
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mimeType = finfo_file($finfo, $uploadedFile['tmp_name']);
+    finfo_close($finfo);
+
+    if (!in_array($mimeType, $allowedTypes[$ext])) {
+        log_debug("Rejected: invalid mime type", [
+            'ext' => $ext,
+            'mime' => $mimeType,
+            'allowed' => $allowedTypes[$ext]
+        ]);
+        json_error_response('Invalid file type. File extension does not match content.');
     }
 
     // Validate upload
@@ -65,13 +115,30 @@ log_debug("Upload attempt", [
     $newFileName = uniqid() . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
     $destination = $uploadDirectory . $newFileName;
 
+    // Check if file is actually an uploaded file
+    if (!is_uploaded_file($uploadedFile['tmp_name'])) {
+        log_debug("Security check failed - not an uploaded file", [
+            'tmp' => $uploadedFile['tmp_name']
+        ]);
+        json_error_response('Security check failed', null, 400);
+    }
+
+    // Ensure the file is readable
+    if (!is_readable($uploadedFile['tmp_name'])) {
+        log_debug("Uploaded file is not readable", [
+            'tmp' => $uploadedFile['tmp_name']
+        ]);
+        json_error_response('Uploaded file is not readable', null, 400);
+    }
+
     // Attempt to move uploaded file
     if (!move_uploaded_file($uploadedFile['tmp_name'], $destination)) {
         $moveError = error_get_last();
         log_debug("move_uploaded_file failed", [
             'tmp' => $uploadedFile['tmp_name'],
             'dest' => $destination,
-            'error' => $moveError ? $moveError['message'] : 'Unknown error'
+            'error' => $moveError ? $moveError['message'] : 'Unknown error',
+            'upload_dir_writable' => is_writable(dirname($destination))
         ]);
         json_error_response('Failed to save uploaded file', null, 500);
     }
@@ -85,6 +152,30 @@ log_debug("Upload attempt", [
         ]);
         json_error_response('File verification failed after upload', null, 500);
     }
+
+    // --- ffprobe video validation ---
+    $ffprobePath = '/opt/homebrew/bin/ffprobe'; // Homebrew default on Apple Silicon
+    if (!file_exists($ffprobePath)) {
+        $ffprobePath = '/usr/local/bin/ffprobe'; // Intel Mac Homebrew default
+    }
+    if (!file_exists($ffprobePath)) {
+        $ffprobePath = 'ffprobe'; // fallback to PATH
+    }
+    $cmd = escapeshellcmd($ffprobePath) . ' -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ' . escapeshellarg($destination);
+    $duration = trim(shell_exec($cmd));
+    if (!is_numeric($duration) || $duration <= 0) {
+        log_debug("ffprobe validation failed", [
+            'file' => $destination,
+            'duration' => $duration
+        ]);
+        @unlink($destination);
+        json_error_response('Uploaded file is not a valid playable video (ffprobe validation failed).', null, 400);
+    }
+    log_debug("ffprobe validation success", [
+        'file' => $destination,
+        'duration' => $duration
+    ]);
+    // --- end ffprobe validation ---
 
     // Generate QR code link
     $qrCodeLink = 'https://eeelab.xyz/photobooth/view_media.php?file=' . urlencode($newFileName);

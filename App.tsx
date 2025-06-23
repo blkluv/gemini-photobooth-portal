@@ -390,6 +390,7 @@ const App: React.FC = () => {
   }, [boomerangFrames, clearModal]);
 
   const handleVideoRecorded = useCallback((videoUrl: string) => {
+    console.log('[DIAG] handleVideoRecorded called, videoUrl:', videoUrl);
     setRecordedVideoUrl(videoUrl);
     setCurrentView('VIDEO_PREVIEW');
     clearModal();
@@ -412,11 +413,10 @@ const App: React.FC = () => {
     setModalContent({ type: 'loading', message: "Preparing video for upload..." });
     try {
       const videoBlob = await fetch(recordedVideoUrl).then(res => res.blob());
-      const fileName = `photobooth_video_${Date.now()}.webm`; 
-      
+      const fileName = `photobooth_video_${Date.now()}.webm`;
       setModalContent({ type: 'loading', message: "Uploading video to cloud..." });
       const qrLink = await uploadMediaToServer(videoBlob, fileName, 'video');
-      
+      setRecordedVideoUrl(qrLink); // <-- Use server URL for preview
       setModalContent({
         type: 'qr',
         message: "Scan QR to view & download your video!",
@@ -430,6 +430,7 @@ const App: React.FC = () => {
   }, [recordedVideoUrl, clearModal]);
 
   const handleSlowMoVideoRecorded = useCallback((videoUrl: string) => {
+    console.log('[DIAG] handleSlowMoVideoRecorded called, videoUrl:', videoUrl);
     setRecordedSlowMoVideoUrl(videoUrl);
     setCurrentView('SLOWMO_PREVIEW');
     clearModal();
@@ -453,10 +454,9 @@ const App: React.FC = () => {
     try {
       const videoBlob = await fetch(recordedSlowMoVideoUrl).then(res => res.blob());
       const fileName = `photobooth_slowmo_${Date.now()}.webm`;
-
       setModalContent({ type: 'loading', message: "Uploading slow-mo video to cloud..." });
       const qrLink = await uploadMediaToServer(videoBlob, fileName, 'slowmo');
-
+      setRecordedSlowMoVideoUrl(qrLink); // <-- Use server URL for preview
       setModalContent({
         type: 'qr',
         message: "Scan QR to view & download your slow-mo video!",

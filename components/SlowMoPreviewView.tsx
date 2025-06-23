@@ -13,70 +13,105 @@ interface SlowMoPreviewViewProps {
 const SLOW_MOTION_RATE = 0.5; // Playback at 50% speed
 
 export const SlowMoPreviewView: React.FC<SlowMoPreviewViewProps> = ({ videoUrl, onRetake, onSave, onBackToMenu }) => {
+  console.log('[DIAG] SlowMoPreviewView mounted, videoUrl:', videoUrl);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoError, setVideoError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log('[DIAG] SlowMoPreviewView useEffect, videoUrl:', videoUrl);
     const video = videoRef.current;
-    if (!video || !videoUrl) return;
+    if (!video || !videoUrl) {
+      setVideoError('No video data available');
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      // Test if URL is still valid
-      const url = new URL(videoUrl);
-      if (!url.protocol.includes('blob')) {
-        console.warn('Slow-mo video URL is not a blob URL:', videoUrl);
-        setVideoError('Invalid video format');
-        return;
-      }
-
-      video.src = videoUrl;
+      // Debug: log the videoUrl type
+      console.debug('[PREVIEW-DEBUG] SlowMoPreviewView videoUrl:', videoUrl);
+      // Accept both blob and http(s) URLs
+      video.src = '';
       video.load();
+      setVideoError(null);
+      setIsLoading(true);
 
       const handleError = (e: Event) => {
         console.error('Slow-mo video playback error:', e);
-        setVideoError('Failed to play video. Please try retaking.');
+        setVideoError('Failed to play video. Please try retaking or check your network connection.');
+        setIsLoading(false);
       };
 
       const handleLoadedMetadata = () => {
         if (video) {
           video.playbackRate = SLOW_MOTION_RATE;
         }
+        setIsLoading(false);
+      };
+
+      const handleLoadedData = () => {
+        setIsLoading(false);
       };
 
       video.addEventListener('error', handleError);
       video.addEventListener('loadedmetadata', handleLoadedMetadata);
+      video.addEventListener('loadeddata', handleLoadedData);
+
+      video.src = videoUrl;
+      video.load();
+
+      // Extra: check if the blob URL is revoked or not
+      if (videoUrl.startsWith('blob:')) {
+        fetch(videoUrl)
+          .then(res => {
+            if (!res.ok) throw new Error('Blob fetch failed');
+            return res.blob();
+          })
+          .then(blob => {
+            console.debug('[PREVIEW-DEBUG] SlowMo blob size:', blob.size, 'type:', blob.type);
+            if (blob.size === 0) {
+              setVideoError('No video data available (empty blob)');
+            }
+          })
+          .catch(err => {
+            console.warn('[PREVIEW-DEBUG] SlowMo blob fetch error:', err);
+            setVideoError('No video data available (blob fetch error)');
+          });
+      }
 
       return () => {
         video.removeEventListener('error', handleError);
         video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        video.removeEventListener('loadeddata', handleLoadedData);
       };
     } catch (error) {
       console.error('Invalid slow-mo video URL:', error);
-      setVideoError('Invalid video URL');
+      setVideoError('Invalid video format');
+      setIsLoading(false);
     }
   }, [videoUrl]);
 
-  // Clean up Object URL when component unmounts or videoUrl changes
+  // Only revoke the URL when component unmounts, not when URL changes
   useEffect(() => {
-    const video = videoRef.current;
-    const currentVideoUrl = videoUrl;
-
     return () => {
+      const video = videoRef.current;
       if (video) {
-        video.pause();
+        const currentSrc = video.src;
         video.src = '';
-        video.load(); // Ensure resources are released
-      }
-      if (currentVideoUrl) {
-        try {
-          URL.revokeObjectURL(currentVideoUrl);
-          console.debug("Revoked slow-mo Object URL on unmount:", currentVideoUrl.substring(0,50) + "...");
-        } catch (error) {
-          console.warn("Error revoking Object URL:", error);
+        video.load();
+        
+        // Only revoke if it's a blob URL and hasn't been revoked already
+        if (currentSrc && currentSrc.startsWith('blob:')) {
+          try {
+            URL.revokeObjectURL(currentSrc);
+            console.debug("Revoked slow-mo Object URL on unmount");
+          } catch (error) {
+            console.warn("Error revoking Object URL:", error);
+          }
         }
       }
     };
-  }, [videoUrl]);
+  }, []);
 
   return (
     <div className="w-full max-w-2xl flex flex-col items-center bg-slate-800 p-6 rounded-lg shadow-2xl">
@@ -99,10 +134,14 @@ export const SlowMoPreviewView: React.FC<SlowMoPreviewViewProps> = ({ videoUrl, 
               </Button>
             </div>
           </div>
+        ) : isLoading ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+            <p className="ml-4 text-xl">Loading slow-motion video...</p>
+          </div>
         ) : (
           <video
             ref={videoRef}
-            src={videoUrl}
             controls
             autoPlay
             playsInline

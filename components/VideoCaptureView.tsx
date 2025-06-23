@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { PHOTO_WIDTH, PHOTO_HEIGHT } from '../constants'; // Using PHOTO dimensions for consistency
 import { VideoCameraIcon, RefreshIcon, ArrowLeftIcon, StopIcon } from './icons';
@@ -19,37 +18,82 @@ export const VideoCaptureView: React.FC<VideoCaptureViewProps> = ({ onVideoRecor
   const [error, setError] = useState<string | null>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [progress, setProgress] = useState(0); // 0 to 100
+  const [progress, setProgress] = useState(0);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
-
 
   const startCamera = useCallback(async () => {
     setError(null);
     setIsCameraReady(false);
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
-        // Request both video and audio
         const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { width: PHOTO_WIDTH, height: PHOTO_HEIGHT },
-          audio: true 
+          video: { 
+            width: PHOTO_WIDTH, 
+            height: PHOTO_HEIGHT,
+            frameRate: { ideal: 30, max: 60 }
+          },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
         });
+
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.onloadedmetadata = () => {
             setIsCameraReady(true);
           };
         }
-        // Setup MediaRecorder
-        mediaRecorderRef.current = new MediaRecorder(stream);
+
+        // Force MediaRecorder to use video/webm (no codecs) for compatibility
+        let usedMimeType = 'video/webm';
+        mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: usedMimeType });
+        console.log('[DIAG] MediaRecorder mimeType used:', usedMimeType);
+
         mediaRecorderRef.current.ondataavailable = (event) => {
+          console.debug('Video data chunk:', { size: event.data.size, type: event.data.type });
           if (event.data.size > 0) {
             recordedChunksRef.current.push(event.data);
           }
         };
+
         mediaRecorderRef.current.onstop = () => {
-          const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' }); // Specify WebM
-          const videoUrl = URL.createObjectURL(blob);
-          onVideoRecorded(videoUrl);
+          console.debug('MediaRecorder stopped, processing chunks:', recordedChunksRef.current.length);
+          try {
+            if (recordedChunksRef.current.length === 0) {
+              throw new Error('No video data was recorded');
+            }
+
+            // Try to create a blob with VP9 and opus codecs first
+            let blob;
+            try {
+              blob = new Blob(recordedChunksRef.current, { 
+                type: 'video/webm;codecs=vp9,opus' 
+              });
+            } catch (e) {
+              console.warn('Failed to create VP9 blob, falling back to default WebM');
+              blob = new Blob(recordedChunksRef.current, { 
+                type: 'video/webm' 
+              });
+            }
+
+            // Diagnostic log for blob
+            console.log('[DIAG] Created video blob:', {
+              size: blob.size,
+              type: blob.type,
+              chunks: recordedChunksRef.current.length
+            });
+
+            // Try using a File object for the preview URL
+            const file = new File([blob], 'recorded_video.webm', { type: blob.type });
+            const videoUrl = URL.createObjectURL(file);
+            console.debug('Created video URL (File):', videoUrl);
+            onVideoRecorded(videoUrl);
+          } catch (error) {
+            console.error('Error processing video:', error);
+            setError(`Failed to process video: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
           recordedChunksRef.current = []; // Clear for next recording
         };
 
@@ -57,11 +101,13 @@ export const VideoCaptureView: React.FC<VideoCaptureViewProps> = ({ onVideoRecor
         console.error("Error accessing media devices:", err);
         let message = "Could not access camera or microphone. Please check permissions.";
         if ((err as Error).name === "NotAllowedError") {
-            message = "Access to camera and/or microphone denied. Please allow access in your browser settings.";
+          message = "Access to camera and/or microphone denied. Please allow access in your browser settings.";
         } else if ((err as Error).name === "NotFoundError") {
-            message = "No camera or microphone found. Please ensure they are connected and enabled.";
+          message = "No camera or microphone found. Please ensure they are connected and enabled.";
         } else if ((err as Error).name === "NotReadableError") {
-            message = "Camera or microphone is already in use or could not be accessed.";
+          message = "Camera or microphone is already in use or could not be accessed.";
+        } else if ((err as Error).name === "OverconstrainedError") {
+          message = "Could not find media devices matching required constraints.";
         }
         setError(message);
       }
@@ -75,47 +121,80 @@ export const VideoCaptureView: React.FC<VideoCaptureViewProps> = ({ onVideoRecor
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach(track => {
+          track.stop();
+          console.debug('Stopped video track:', track.label);
+        });
+        videoRef.current.srcObject = null;
       }
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-        mediaRecorderRef.current.stop();
+        try {
+          mediaRecorderRef.current.stop();
+          console.debug('Stopped MediaRecorder on cleanup');
+        } catch (error) {
+          console.error('Error stopping MediaRecorder:', error);
+        }
       }
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
       }
+      recordedChunksRef.current = [];
     };
   }, [startCamera]);
 
-
   const handleStartRecording = () => {
-    if (!mediaRecorderRef.current || !isCameraReady || isRecording) return;
+    if (!mediaRecorderRef.current || !isCameraReady || isRecording) {
+      console.warn('Cannot start recording:', { 
+        hasMediaRecorder: !!mediaRecorderRef.current, 
+        isCameraReady, 
+        isRecording 
+      });
+      return;
+    }
 
-    recordedChunksRef.current = []; // Clear previous chunks
-    mediaRecorderRef.current.start();
-    setIsRecording(true);
-    setProgress(0);
-    
-    const startTime = Date.now();
-    recordingTimerRef.current = setInterval(() => {
+    recordedChunksRef.current = [];
+    try {
+      // Request data every 1000ms (1 second) and when stopped
+      mediaRecorderRef.current.start(1000);
+      console.debug('Started recording with settings:', {
+        mimeType: mediaRecorderRef.current.mimeType,
+        state: mediaRecorderRef.current.state,
+        videoBitsPerSecond: mediaRecorderRef.current.videoBitsPerSecond
+      });
+      setIsRecording(true);
+      setProgress(0);
+      
+      const startTime = Date.now();
+      recordingTimerRef.current = setInterval(() => {
         const elapsedTime = Date.now() - startTime;
         const currentProgress = Math.min(100, (elapsedTime / (RECORDING_DURATION_S * 1000)) * 100);
         setProgress(currentProgress);
 
         if (elapsedTime >= RECORDING_DURATION_S * 1000) {
-            handleStopRecording();
+          handleStopRecording();
         }
-    }, 100); // Update progress every 100ms
+      }, 100);
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+      setError(`Failed to start recording: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   const handleStopRecording = () => {
+    console.debug('Stopping recording...');
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (error) {
+        console.error('Error stopping recording:', error);
+        setError(`Failed to stop recording: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
     }
     if (recordingTimerRef.current) {
       clearInterval(recordingTimerRef.current);
     }
     setIsRecording(false);
-    setProgress(100); 
+    setProgress(100);
   };
 
   return (
