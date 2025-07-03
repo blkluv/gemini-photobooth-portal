@@ -78,8 +78,14 @@ export const MenuPage: React.FC<MenuPageProps> = ({ onSelectView }) => {
           description="Capture videos and watch them in dramatic slow motion."
           onClick={() => onSelectView('SLOWMO_CAPTURE')}
         />
+        <MenuItem
+          icon={<SparklesIcon className="w-12 h-12 sm:w-16 sm:h-16" />}
+          title="Photo Strip"
+          description="Take 3 photos and print a classic photo strip."
+          onClick={() => onSelectView('PHOTO_STRIP')}
+        />
       </div>
-       <style>{`
+      <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }

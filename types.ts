@@ -35,7 +35,8 @@ export type ViewState =
   | 'VIDEO_CAPTURE'
   | 'VIDEO_PREVIEW'
   | 'SLOWMO_CAPTURE'
-  | 'SLOWMO_PREVIEW';
+  | 'SLOWMO_PREVIEW'
+  | 'PHOTO_STRIP';
 
 export interface ModalContent {
   type: 'loading' | 'qr' | 'message' | 'error';

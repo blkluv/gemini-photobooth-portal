@@ -27,6 +27,7 @@ import { Button } from './components/Button';
 import { Spinner } from './components/Spinner';
 import { boomerangFramesToWebM } from './utils/boomerangToWebm';
 import { boomerangFramesToGif } from './utils/boomerangToGif';
+import PhotoStripView from './components/PhotoStripView';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('LANDING');
@@ -73,7 +74,7 @@ const App: React.FC = () => {
     setRecordedSlowMoVideoUrl(null);
     clearModal();
 
-    const actionableViews: ViewState[] = ['CAMERA', 'BOOMERANG_CAPTURE', 'VIDEO_CAPTURE', 'SLOWMO_CAPTURE'];
+    const actionableViews: ViewState[] = ['CAMERA', 'BOOMERANG_CAPTURE', 'VIDEO_CAPTURE', 'SLOWMO_CAPTURE', 'PHOTO_STRIP'];
     if (actionableViews.includes(selectedView)) {
       setCurrentView(selectedView);
     } else {
@@ -509,7 +510,8 @@ const App: React.FC = () => {
         'LANDING', 'MENU', 'CAMERA', 'EDITOR', 'PRINTING', 
         'BOOMERANG_CAPTURE', 'BOOMERANG_PREVIEW', 
         'VIDEO_CAPTURE', 'VIDEO_PREVIEW',
-        'SLOWMO_CAPTURE', 'SLOWMO_PREVIEW'
+        'SLOWMO_CAPTURE', 'SLOWMO_PREVIEW',
+        'PHOTO_STRIP'
     ];
     if (!validViews.includes(currentView)) {
       console.warn(`Invalid view state: ${currentView}. Redirecting to MENU.`);
@@ -571,6 +573,8 @@ const App: React.FC = () => {
             return <div className="text-white flex items-center justify-center h-screen"><Spinner /> Loading Slow-Mo Preview...</div>;
         }
         return <SlowMoPreviewView videoUrl={recordedSlowMoVideoUrl} onRetake={handleSlowMoVideoRetake} onSave={handleSlowMoVideoSave} onBackToMenu={handleBackToMenu} />;
+      case 'PHOTO_STRIP':
+        return <PhotoStripView onBackToMenu={handleBackToMenu} />;
       default:
         return <MenuPage onSelectView={handleMenuSelection} />;
     }
