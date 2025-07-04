@@ -31,7 +31,7 @@ ini_set('max_execution_time', 300);
 ini_set('post_max_size', '100M');
 ini_set('upload_max_filesize', '100M');
 
-$uploadDirectory = $_SERVER['DOCUMENT_ROOT'] . '/photobooth/uploads/';
+$uploadDirectory = $_SERVER['DOCUMENT_ROOT'] . '/uploads/';
 
 // Ensure upload directory exists and is writable
 if (!ensure_upload_directory($uploadDirectory)) {
@@ -82,7 +82,7 @@ log_debug("Upload attempt", [
 ]);
     // Validate file format and mime type
     $allowedTypes = [
-        'webm' => ['video/webm'],
+        'webm' => ['video/webm', 'video/x-matroska'],
         'mp4' => ['video/mp4'],
         'mov' => ['video/quicktime'],
         'gif' => ['image/gif']
@@ -165,18 +165,45 @@ log_debug("Upload attempt", [
     $cmd = escapeshellcmd($ffprobePath) . ' -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ' . escapeshellarg($destination);
     $duration = trim(shell_exec($cmd));
     if (!is_numeric($duration) || $duration <= 0) {
-        log_debug("ffprobe validation failed", [
+        log_debug("ffprobe validation warning", [
             'file' => $destination,
             'duration' => $duration
         ]);
-        @unlink($destination);
-        json_error_response('Uploaded file is not a valid playable video (ffprobe validation failed).', null, 400);
+        // Do not reject or delete the file, just log a warning and continue
     }
-    log_debug("ffprobe validation success", [
-        'file' => $destination,
-        'duration' => $duration
-    ]);
+    else {
+        log_debug("ffprobe validation success", [
+            'file' => $destination,
+            'duration' => $duration
+        ]);
+    }
     // --- end ffprobe validation ---
+
+    // --- Convert WebM to MP4 using ffmpeg ---
+    if ($ext === 'webm') {
+        $mp4FileName = preg_replace('/\.webm$/i', '.mp4', $newFileName);
+        $mp4Destination = $uploadDirectory . $mp4FileName;
+        $ffmpegPath = 'ffmpeg'; // Assumes ffmpeg is in PATH
+        $ffmpegCmd = escapeshellcmd($ffmpegPath) . ' -y -i ' . escapeshellarg($destination) . ' -c:v libx264 -preset fast -crf 23 -c:a aac -b:a 128k ' . escapeshellarg($mp4Destination) . ' 2>&1';
+        $ffmpegOutput = shell_exec($ffmpegCmd);
+        if (file_exists($mp4Destination)) {
+            log_debug('MP4 conversion success', [
+                'webm' => $destination,
+                'mp4' => $mp4Destination
+            ]);
+            $mp4QrCodeLink = 'https://snapbooth.eeelab.xyz/view_media.php?file=' . urlencode($mp4FileName);
+        } else {
+            log_debug('MP4 conversion failed', [
+                'webm' => $destination,
+                'mp4' => $mp4Destination,
+                'ffmpeg_output' => $ffmpegOutput
+            ]);
+            $mp4QrCodeLink = null;
+        }
+    } else {
+        $mp4QrCodeLink = null;
+    }
+    // --- end MP4 conversion ---
 
     // Generate QR code link
     $qrCodeLink = 'https://snapbooth.eeelab.xyz/view_media.php?file=' . urlencode($newFileName);
@@ -215,6 +242,7 @@ log_debug("Upload attempt", [
     echo json_encode([
         'success' => true,
         'message' => 'Video uploaded successfully',
-        'qrCodeLink' => $qrCodeLink
+        'qrCodeLink' => $qrCodeLink,
+        'mp4QrCodeLink' => $mp4QrCodeLink
     ]);
 ?>

@@ -4,22 +4,26 @@ import { VideoCameraIcon, RefreshIcon, ArrowLeftIcon, StopIcon } from './icons';
 import { Button } from './Button';
 
 interface VideoCaptureViewProps {
-  onVideoRecorded: (videoUrl: string) => void;
+  onVideoRecorded: (videoUrl: string, capturedFrames: string[]) => void;
   onBackToMenu: () => void;
 }
 
-const RECORDING_DURATION_S = 10; // 10 seconds
+const RECORDING_DURATION_S = 8; // 10 seconds
+const MAX_RECORDING_DURATION = 8000; // 8 seconds in ms
 
 export const VideoCaptureView: React.FC<VideoCaptureViewProps> = ({ onVideoRecorded, onBackToMenu }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
+  const capturedFramesRef = useRef<string[]>([]);
+  const frameCaptureTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const [error, setError] = useState<string | null>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [progress, setProgress] = useState(0);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const recordingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const startCamera = useCallback(async () => {
     setError(null);
@@ -46,10 +50,19 @@ export const VideoCaptureView: React.FC<VideoCaptureViewProps> = ({ onVideoRecor
           };
         }
 
-        // Force MediaRecorder to use video/webm (no codecs) for compatibility
-        let usedMimeType = 'video/webm';
-        mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: usedMimeType });
-        console.log('[DIAG] MediaRecorder mimeType used:', usedMimeType);
+        // Prefer VP8 codec for better compatibility
+        const optionsVp8 = { 
+          mimeType: 'video/webm;codecs=vp8',
+          videoBitsPerSecond: 5000000 // 5 Mbps for higher quality
+        };
+        const optionsWebm = { mimeType: 'video/webm' };
+
+        try {
+          mediaRecorderRef.current = new MediaRecorder(stream, optionsVp8);
+        } catch (e) {
+          console.warn('VP8 not supported, falling back to default WebM codec');
+          mediaRecorderRef.current = new MediaRecorder(stream, optionsWebm);
+        }
 
         mediaRecorderRef.current.ondataavailable = (event) => {
           console.debug('Video data chunk:', { size: event.data.size, type: event.data.type });
@@ -89,12 +102,13 @@ export const VideoCaptureView: React.FC<VideoCaptureViewProps> = ({ onVideoRecor
             const file = new File([blob], 'recorded_video.webm', { type: blob.type });
             const videoUrl = URL.createObjectURL(file);
             console.debug('Created video URL (File):', videoUrl);
-            onVideoRecorded(videoUrl);
+            onVideoRecorded(videoUrl, capturedFramesRef.current);
           } catch (error) {
             console.error('Error processing video:', error);
             setError(`Failed to process video: ${error instanceof Error ? error.message : 'Unknown error'}`);
           }
-          recordedChunksRef.current = []; // Clear for next recording
+          recordedChunksRef.current = [];
+          capturedFramesRef.current = [];
         };
 
       } catch (err) {
@@ -138,7 +152,11 @@ export const VideoCaptureView: React.FC<VideoCaptureViewProps> = ({ onVideoRecor
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
       }
+      if (recordingTimeoutRef.current) {
+        clearTimeout(recordingTimeoutRef.current);
+      }
       recordedChunksRef.current = [];
+      capturedFramesRef.current = [];
     };
   }, [startCamera]);
 
@@ -153,6 +171,7 @@ export const VideoCaptureView: React.FC<VideoCaptureViewProps> = ({ onVideoRecor
     }
 
     recordedChunksRef.current = [];
+    capturedFramesRef.current = [];
     try {
       // Request data every 1000ms (1 second) and when stopped
       mediaRecorderRef.current.start(1000);
@@ -174,6 +193,24 @@ export const VideoCaptureView: React.FC<VideoCaptureViewProps> = ({ onVideoRecor
           handleStopRecording();
         }
       }, 100);
+
+      recordingTimeoutRef.current = setTimeout(() => {
+        handleStopRecording();
+      }, MAX_RECORDING_DURATION);
+
+      // Start frame capture
+      frameCaptureTimerRef.current = setInterval(() => {
+        if (videoRef.current) {
+          const canvas = document.createElement('canvas');
+          canvas.width = PHOTO_WIDTH;
+          canvas.height = PHOTO_HEIGHT;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(videoRef.current, 0, 0, PHOTO_WIDTH, PHOTO_HEIGHT);
+            capturedFramesRef.current.push(canvas.toDataURL('image/png'));
+          }
+        }
+      }, 100); // every 100ms
     } catch (error) {
       console.error('Failed to start recording:', error);
       setError(`Failed to start recording: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -192,6 +229,14 @@ export const VideoCaptureView: React.FC<VideoCaptureViewProps> = ({ onVideoRecor
     }
     if (recordingTimerRef.current) {
       clearInterval(recordingTimerRef.current);
+    }
+    if (recordingTimeoutRef.current) {
+      clearTimeout(recordingTimeoutRef.current);
+      recordingTimeoutRef.current = null;
+    }
+    if (frameCaptureTimerRef.current) {
+      clearInterval(frameCaptureTimerRef.current);
+      frameCaptureTimerRef.current = null;
     }
     setIsRecording(false);
     setProgress(100);

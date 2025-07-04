@@ -31,6 +31,7 @@ import PhotoStripView from './components/PhotoStripView';
 import PinGate from './components/PinGate';
 import AdminSettingsModal from './components/AdminSettingsModal';
 import { CogIcon } from './components/icons';
+import { extractFramesFromVideoBlob } from './utils/imageUtils';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('LANDING');
@@ -49,6 +50,9 @@ const App: React.FC = () => {
   const [boomerangFrames, setBoomerangFrames] = useState<string[]>([]);
   const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
   const [recordedSlowMoVideoUrl, setRecordedSlowMoVideoUrl] = useState<string | null>(null);
+
+  const [recordedVideoFrames, setRecordedVideoFrames] = useState<string[]>([]);
+  const [recordedSlowMoFrames, setRecordedSlowMoFrames] = useState<string[]>([]);
 
   const photoEditorRef = useRef<{ generateFinalImage: () => Promise<string | null> }>(null);
 
@@ -403,9 +407,9 @@ const App: React.FC = () => {
     }
   }, [boomerangFrames, clearModal]);
 
-  const handleVideoRecorded = useCallback((videoUrl: string) => {
-    console.log('[DIAG] handleVideoRecorded called, videoUrl:', videoUrl);
+  const handleVideoRecorded = useCallback((videoUrl: string, capturedFrames: string[]) => {
     setRecordedVideoUrl(videoUrl);
+    setRecordedVideoFrames(capturedFrames);
     setCurrentView('VIDEO_PREVIEW');
     clearModal();
   }, [clearModal]);
@@ -430,12 +434,12 @@ const App: React.FC = () => {
       const fileName = `photobooth_video_${Date.now()}.webm`;
       setModalContent({ type: 'loading', message: "Uploading video to cloud..." });
       const qrLink = await uploadMediaToServer(videoBlob, fileName, 'video');
-      setRecordedVideoUrl(qrLink); // <-- Use server URL for preview
       setModalContent({
         type: 'qr',
         message: "Scan QR to view & download your video!",
         qrData: qrLink,
         itemType: 'video',
+        message: 'Scan QR to view & download your video!'
       });
     } catch (error) {
       console.error("Error saving video:", error);
@@ -443,9 +447,26 @@ const App: React.FC = () => {
     }
   }, [recordedVideoUrl, clearModal]);
 
-  const handleSlowMoVideoRecorded = useCallback((videoUrl: string) => {
-    console.log('[DIAG] handleSlowMoVideoRecorded called, videoUrl:', videoUrl);
+  const handleVideoSaveAsGif = useCallback(async () => {
+    if (!recordedVideoFrames || recordedVideoFrames.length === 0) {
+      setModalContent({ type: 'error', message: "No captured frames to save as GIF.", itemType: 'video', duration: 3000 });
+      return;
+    }
+    setModalContent({ type: 'loading', message: "Encoding GIF from captured frames..." });
+    try {
+      const gifBlob = await boomerangFramesToGif(recordedVideoFrames, 10);
+      const fileName = `photobooth_video_${Date.now()}.gif`;
+      setModalContent({ type: 'loading', message: "Uploading GIF to cloud..." });
+      const qrLink = await uploadMediaToServer(gifBlob, fileName, 'video');
+      setModalContent({ type: 'qr', qrData: qrLink, itemType: 'video', message: 'Scan QR to view & download your GIF!' });
+    } catch (err) {
+      setModalContent({ type: 'error', message: `Failed to save video as GIF: ${err instanceof Error ? err.message : String(err)}`, itemType: 'video', duration: 4000 });
+    }
+  }, [recordedVideoFrames]);
+
+  const handleSlowMoVideoRecorded = useCallback((videoUrl: string, capturedFrames: string[]) => {
     setRecordedSlowMoVideoUrl(videoUrl);
+    setRecordedSlowMoFrames(capturedFrames);
     setCurrentView('SLOWMO_PREVIEW');
     clearModal();
   }, [clearModal]);
@@ -470,18 +491,35 @@ const App: React.FC = () => {
       const fileName = `photobooth_slowmo_${Date.now()}.webm`;
       setModalContent({ type: 'loading', message: "Uploading slow-mo video to cloud..." });
       const qrLink = await uploadMediaToServer(videoBlob, fileName, 'slowmo');
-      setRecordedSlowMoVideoUrl(qrLink); // <-- Use server URL for preview
       setModalContent({
         type: 'qr',
         message: "Scan QR to view & download your slow-mo video!",
         qrData: qrLink,
         itemType: 'slowmo',
+        message: 'Scan QR to view & download your GIF!'
       });
     } catch (error) {
       console.error("Error saving slow-mo video:", error);
       setModalContent({ type: 'error', message: `Failed to save slow-mo video: ${(error as Error).message}`, itemType: 'slowmo', duration: 5000 });
     }
   }, [recordedSlowMoVideoUrl, clearModal]);
+
+  const handleSlowMoSaveAsGif = useCallback(async () => {
+    if (!recordedSlowMoFrames || recordedSlowMoFrames.length === 0) {
+      setModalContent({ type: 'error', message: "No captured frames to save as GIF.", itemType: 'slowmo', duration: 3000 });
+      return;
+    }
+    setModalContent({ type: 'loading', message: "Encoding GIF from captured frames..." });
+    try {
+      const gifBlob = await boomerangFramesToGif(recordedSlowMoFrames, 10);
+      const fileName = `photobooth_slowmo_${Date.now()}.gif`;
+      setModalContent({ type: 'loading', message: "Uploading GIF to cloud..." });
+      const qrLink = await uploadMediaToServer(gifBlob, fileName, 'slowmo');
+      setModalContent({ type: 'qr', qrData: qrLink, itemType: 'slowmo', message: 'Scan QR to view & download your GIF!' });
+    } catch (err) {
+      setModalContent({ type: 'error', message: `Failed to save slow-mo as GIF: ${err instanceof Error ? err.message : String(err)}`, itemType: 'slowmo', duration: 4000 });
+    }
+  }, [recordedSlowMoFrames]);
 
   // Save handler for photo strip
   const handleSavePhotoStrip = async (stripUrl: string) => {
@@ -603,14 +641,14 @@ const App: React.FC = () => {
         if (!recordedVideoUrl) {
             return <div className="text-white flex items-center justify-center h-screen"><Spinner /> Loading Video Preview...</div>;
         }
-        return <VideoPreviewView videoUrl={recordedVideoUrl} onRetake={handleVideoRetake} onSave={handleVideoSave} onBackToMenu={handleBackToMenu} />;
+        return <VideoPreviewView videoUrl={recordedVideoUrl} onRetake={handleVideoRetake} onSave={handleVideoSave} onSaveAsGif={handleVideoSaveAsGif} onBackToMenu={handleBackToMenu} />;
       case 'SLOWMO_CAPTURE':
         return <SlowMoCaptureView onVideoRecorded={handleSlowMoVideoRecorded} onBackToMenu={handleBackToMenu} />;
       case 'SLOWMO_PREVIEW':
          if (!recordedSlowMoVideoUrl) {
             return <div className="text-white flex items-center justify-center h-screen"><Spinner /> Loading Slow-Mo Preview...</div>;
         }
-        return <SlowMoPreviewView videoUrl={recordedSlowMoVideoUrl} onRetake={handleSlowMoVideoRetake} onSave={handleSlowMoVideoSave} onBackToMenu={handleBackToMenu} />;
+        return <SlowMoPreviewView videoUrl={recordedSlowMoVideoUrl} onRetake={handleSlowMoVideoRetake} onSave={handleSlowMoVideoSave} onSaveAsGif={handleSlowMoSaveAsGif} onBackToMenu={handleBackToMenu} />;
       case 'PHOTO_STRIP':
         return <PhotoStripView onBackToMenu={handleBackToMenu} onSave={handleSavePhotoStrip} />;
       default:

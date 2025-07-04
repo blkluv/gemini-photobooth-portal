@@ -21,6 +21,19 @@ function is_video($filename) {
     return in_array($ext, ['mp4', 'webm', 'mov']);
 }
 
+if ($file && file_exists($filePath) && isset($_GET['download'])) {
+    $mimeType = mime_content_type($filePath);
+    header('Content-Description: File Transfer');
+    header('Content-Type: ' . $mimeType);
+    header('Content-Disposition: attachment; filename="' . basename($filePath) . '"');
+    header('Expires: 0');
+    header('Cache-Control: must-revalidate');
+    header('Pragma: public');
+    header('Content-Length: ' . filesize($filePath));
+    readfile($filePath);
+    exit;
+}
+
 if ($file && file_exists($filePath)) {
     // --- Analytics logging ---
     $device_key = $_GET['device_key'] ?? 'unknown';
@@ -67,12 +80,14 @@ if ($file && file_exists($filePath)) {
             <?php if (is_image($file)): ?>
                 <img src="<?php echo htmlspecialchars($fileUrl); ?>" alt="Uploaded Photo">
             <?php elseif (is_video($file)): ?>
-                <video src="<?php echo htmlspecialchars($fileUrl); ?>" controls autoplay loop></video>
+                <video src="<?php echo htmlspecialchars($fileUrl); ?>" controls autoplay loop>
+                    Your browser does not support WebM video. Please use Chrome/Firefox, or download as GIF.
+                </video>
             <?php else: ?>
                 <div class="error">Unsupported file type.</div>
             <?php endif; ?>
             <br>
-            <a href="<?php echo htmlspecialchars($fileUrl); ?>" download>
+            <a href="?file=<?php echo urlencode($file); ?>&download=1">
                 <button class="download-btn">Download</button>
             </a>
         <?php else: ?>

@@ -1,4 +1,3 @@
-
 import type { Sticker } from '../types';
 import { PHOTO_WIDTH, PHOTO_HEIGHT } from '../constants';
 
@@ -111,3 +110,68 @@ export const generateQrFriendlyThumbnail = (
     image.src = baseImageSrc;
   });
 };
+
+/**
+ * Extract frames from a video Blob at a given FPS.
+ * Returns an array of data URLs (PNG) for each frame.
+ */
+export async function extractFramesFromVideoBlob(
+  videoBlob: Blob,
+  fps: number = 10,
+  maxFrames: number = 60
+): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    const url = URL.createObjectURL(videoBlob);
+    video.src = url;
+    video.crossOrigin = 'anonymous';
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+    video.onloadedmetadata = async () => {
+      let retries = 10;
+      while ((!isFinite(video.duration) || video.duration <= 0) && retries > 0) {
+        await new Promise(res => setTimeout(res, 100)); // wait 100ms
+        retries--;
+      }
+      if (!isFinite(video.duration) || video.duration <= 0) {
+        reject(new Error('Failed to load video duration for frame extraction.'));
+        return;
+      }
+      const duration = video.duration;
+      const totalFrames = Math.min(Math.floor(duration * fps), maxFrames);
+      const interval = duration / totalFrames;
+      const canvas = document.createElement('canvas');
+      canvas.width = PHOTO_WIDTH;
+      canvas.height = PHOTO_HEIGHT;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        URL.revokeObjectURL(url);
+        return reject(new Error('Failed to get canvas context for frame extraction'));
+      }
+      const frames: string[] = [];
+      let currentTime = 0;
+      let frameIdx = 0;
+      function seekAndCapture() {
+        video.currentTime = currentTime;
+      }
+      video.onseeked = () => {
+        ctx.drawImage(video, 0, 0, PHOTO_WIDTH, PHOTO_HEIGHT);
+        frames.push(canvas.toDataURL('image/png'));
+        frameIdx++;
+        if (frameIdx < totalFrames) {
+          currentTime += interval;
+          seekAndCapture();
+        } else {
+          URL.revokeObjectURL(url);
+          resolve(frames);
+        }
+      };
+      seekAndCapture();
+    };
+    video.onerror = (e) => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to load video for frame extraction'));
+    };
+  });
+}

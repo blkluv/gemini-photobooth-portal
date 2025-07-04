@@ -69,7 +69,7 @@ export const MenuPage: React.FC<MenuPageProps> = ({ onSelectView }) => {
         <MenuItem
           icon={<VideoCameraIcon className="w-12 h-12 sm:w-16 sm:h-16" />}
           title="Record Video"
-          description="Create short video clips with audio. (Max 10s)"
+          description="Create short video clips with audio. (Max 8s)"
           onClick={() => onSelectView('VIDEO_CAPTURE')}
         />
         <MenuItem

@@ -4,7 +4,7 @@ import { ClockIcon, RefreshIcon, ArrowLeftIcon, StopIcon } from './icons'; // Ch
 import { Button } from './Button';
 
 interface SlowMoCaptureViewProps {
-  onVideoRecorded: (videoUrl: string) => void;
+  onVideoRecorded: (videoUrl: string, capturedFrames: string[]) => void;
   onBackToMenu: () => void;
 }
 
@@ -14,6 +14,8 @@ export const SlowMoCaptureView: React.FC<SlowMoCaptureViewProps> = ({ onVideoRec
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
+  const capturedFramesRef = useRef<string[]>([]);
+  const frameCaptureTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const [error, setError] = useState<string | null>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
@@ -46,16 +48,18 @@ export const SlowMoCaptureView: React.FC<SlowMoCaptureViewProps> = ({ onVideoRec
           };
         }
 
-        const options = { 
-          mimeType: 'video/webm;codecs=vp9,opus',
+        // Prefer VP8 codec for better compatibility
+        const optionsVp8 = { 
+          mimeType: 'video/webm;codecs=vp8,opus',
           videoBitsPerSecond: 5000000 // 5 Mbps for higher quality slow-mo
         };
+        const optionsWebm = { mimeType: 'video/webm' };
         
         try {
-          mediaRecorderRef.current = new MediaRecorder(stream, options);
+          mediaRecorderRef.current = new MediaRecorder(stream, optionsVp8);
         } catch (e) {
-          console.warn('VP9 not supported, falling back to default codec');
-          mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'video/webm' });
+          console.warn('VP8 not supported, falling back to default WebM codec');
+          mediaRecorderRef.current = new MediaRecorder(stream, optionsWebm);
         }
 
         mediaRecorderRef.current.ondataavailable = (event) => {
@@ -100,12 +104,13 @@ export const SlowMoCaptureView: React.FC<SlowMoCaptureViewProps> = ({ onVideoRec
 
             const videoUrl = URL.createObjectURL(blob);
             console.debug('Created slow-mo video URL:', videoUrl);
-            onVideoRecorded(videoUrl);
+            onVideoRecorded(videoUrl, capturedFramesRef.current);
           } catch (error) {
             console.error('Error processing slow-mo video:', error);
             setError(`Failed to process video: ${error instanceof Error ? error.message : 'Unknown error'}`);
           }
-          recordedChunksRef.current = []; // Clear for next recording
+          recordedChunksRef.current = [];
+          capturedFramesRef.current = [];
         };
 
       } catch (err) {
@@ -150,6 +155,7 @@ export const SlowMoCaptureView: React.FC<SlowMoCaptureViewProps> = ({ onVideoRec
         clearInterval(recordingTimerRef.current);
       }
       recordedChunksRef.current = [];
+      capturedFramesRef.current = [];
     };
   }, [startCamera]);
 
@@ -164,6 +170,7 @@ export const SlowMoCaptureView: React.FC<SlowMoCaptureViewProps> = ({ onVideoRec
     }
 
     recordedChunksRef.current = [];
+    capturedFramesRef.current = [];
     try {
       // Request data every 500ms (0.5 seconds) for smoother slow-mo
       mediaRecorderRef.current.start(500);
@@ -185,6 +192,20 @@ export const SlowMoCaptureView: React.FC<SlowMoCaptureViewProps> = ({ onVideoRec
           handleStopRecording();
         }
       }, 100);
+
+      // Start frame capture
+      frameCaptureTimerRef.current = setInterval(() => {
+        if (videoRef.current) {
+          const canvas = document.createElement('canvas');
+          canvas.width = PHOTO_WIDTH;
+          canvas.height = PHOTO_HEIGHT;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(videoRef.current, 0, 0, PHOTO_WIDTH, PHOTO_HEIGHT);
+            capturedFramesRef.current.push(canvas.toDataURL('image/png'));
+          }
+        }
+      }, 100); // every 100ms
     } catch (error) {
       console.error('Failed to start slow-mo recording:', error);
       setError(`Failed to start recording: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -203,6 +224,10 @@ export const SlowMoCaptureView: React.FC<SlowMoCaptureViewProps> = ({ onVideoRec
     }
     if (recordingTimerRef.current) {
       clearInterval(recordingTimerRef.current);
+    }
+    if (frameCaptureTimerRef.current) {
+      clearInterval(frameCaptureTimerRef.current);
+      frameCaptureTimerRef.current = null;
     }
     setIsRecording(false);
     setProgress(100);
