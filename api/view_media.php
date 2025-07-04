@@ -5,7 +5,7 @@
 header("Access-Control-Allow-Origin: *");
 
 $uploadsDir = __DIR__ . '/uploads/';
-$baseUrl = 'https://eeelab.xyz/photobooth/uploads/';
+$baseUrl = 'https://snapbooth.eeelab.xyz/uploads/';
 
 $file = isset($_GET['file']) ? basename($_GET['file']) : null;
 $filePath = $uploadsDir . $file;
@@ -19,6 +19,30 @@ function is_image($filename) {
 function is_video($filename) {
     $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
     return in_array($ext, ['mp4', 'webm', 'mov']);
+}
+
+if ($file && file_exists($filePath)) {
+    // --- Analytics logging ---
+    $device_key = $_GET['device_key'] ?? 'unknown';
+    $analyticsData = [
+        'device_key' => $device_key,
+        'event_type' => 'media_view',
+        'event_data' => [
+            'filename' => $file,
+            'ip' => $_SERVER['REMOTE_ADDR']
+        ]
+    ];
+    $options = [
+        'http' => [
+            'header'  => "Content-type: application/json\r\n",
+            'method'  => 'POST',
+            'content' => json_encode($analyticsData),
+            'timeout' => 2
+        ]
+    ];
+    $context  = stream_context_create($options);
+    @file_get_contents('https://snapbooth.eeelab.xyz/api/analytics.php', false, $context);
+    // --- End analytics logging ---
 }
 
 ?>

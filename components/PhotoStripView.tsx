@@ -8,9 +8,10 @@ const PHOTO_COUNT = 3;
 
 interface PhotoStripViewProps {
   onBackToMenu?: () => void;
+  onSave?: (stripUrl: string) => void;
 }
 
-const PhotoStripView: React.FC<PhotoStripViewProps> = ({ onBackToMenu }) => {
+const PhotoStripView: React.FC<PhotoStripViewProps> = ({ onBackToMenu, onSave }) => {
   const [photos, setPhotos] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState(1);
   const [isPreview, setIsPreview] = useState(false);
@@ -133,11 +134,9 @@ const PhotoStripView: React.FC<PhotoStripViewProps> = ({ onBackToMenu }) => {
             </Button>
             {stripUrl && (
               <>
-                <a href={stripUrl} download="photo-strip.jpg">
-                  <Button variant="success">
-                    <SaveIcon className="w-5 h-5 mr-2" /> Download
-                  </Button>
-                </a>
+                <Button onClick={() => onSave && onSave(stripUrl)} variant="success">
+                  <SaveIcon className="w-5 h-5 mr-2" /> Save
+                </Button>
                 <Button onClick={handlePrint} variant="special">
                   <PrintIcon className="w-5 h-5 mr-2" /> Print
                 </Button>

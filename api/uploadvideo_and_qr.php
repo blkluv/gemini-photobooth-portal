@@ -5,6 +5,7 @@ require_once(__DIR__ . '/upload_debug_functions.php');
 $allowed_origins = array(
     'http://localhost:5173',  // Vite dev server
     'http://localhost:8000',   // PHP test server
+    'https://snapbooth.eeelab.xyz',// Production domain
     'https://eeelab.xyz'     // Production domain
 );
 
@@ -178,13 +179,36 @@ log_debug("Upload attempt", [
     // --- end ffprobe validation ---
 
     // Generate QR code link
-    $qrCodeLink = 'https://eeelab.xyz/photobooth/view_media.php?file=' . urlencode($newFileName);
+    $qrCodeLink = 'https://snapbooth.eeelab.xyz/view_media.php?file=' . urlencode($newFileName);
     
     log_debug("Upload success", [
         'filename' => $newFileName,
         'size' => filesize($destination),
         'link' => $qrCodeLink
     ]);
+
+    // --- Analytics logging ---
+    $device_key = $_POST['device_key'] ?? 'unknown';
+    $analyticsData = [
+        'device_key' => $device_key,
+        'event_type' => 'upload',
+        'event_data' => [
+            'filename' => $newFileName,
+            'type' => 'video',
+            'ip' => $_SERVER['REMOTE_ADDR']
+        ]
+    ];
+    $options = [
+        'http' => [
+            'header'  => "Content-type: application/json\r\n",
+            'method'  => 'POST',
+            'content' => json_encode($analyticsData),
+            'timeout' => 2
+        ]
+    ];
+    $context  = stream_context_create($options);
+    @file_get_contents('https://snapbooth.eeelab.xyz/api/analytics.php', false, $context);
+    // --- End analytics logging ---
 
     // Return success response
     header('Content-Type: application/json');

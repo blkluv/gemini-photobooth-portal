@@ -28,11 +28,17 @@ import { Spinner } from './components/Spinner';
 import { boomerangFramesToWebM } from './utils/boomerangToWebm';
 import { boomerangFramesToGif } from './utils/boomerangToGif';
 import PhotoStripView from './components/PhotoStripView';
+import PinGate from './components/PinGate';
+import AdminSettingsModal from './components/AdminSettingsModal';
+import { CogIcon } from './components/icons';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('LANDING');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [editedImage, setEditedImage] = useState<string | null>(null);
+  const [pinUnlocked, setPinUnlocked] = useState(() => localStorage.getItem('photoboothPin') === '1');
+  const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('photoboothPin') === '1');
+  const [showAdminSettings, setShowAdminSettings] = useState(false);
   
   const [appliedStickers, setAppliedStickers] = useState<Sticker[]>([]);
   const [activeFilter, setActiveFilter] = useState<Filter>(FILTERS[0]);
@@ -62,6 +68,13 @@ const App: React.FC = () => {
 
   const handleLandingComplete = useCallback(() => {
     setCurrentView('MENU');
+  }, []);
+
+  const handleAdminLogout = useCallback(() => {
+    setPinUnlocked(false);
+    setIsAdmin(false);
+    setShowAdminSettings(false);
+    setCurrentView('LANDING');
   }, []);
 
   const handleMenuSelection = useCallback((selectedView: ViewState) => {
@@ -127,13 +140,12 @@ const App: React.FC = () => {
 
     const blob = base64ToBlob(base64Image);
     const formData = new FormData();
-    // Assuming 'photo.png' is fine for boomerang first frame too, as it's an image.
-    // The PHP script on server side will generate unique name.
-    formData.append('image', blob, 'photo.png'); 
+    formData.append('image', blob, 'photo.png');
+    formData.append('device_key', localStorage.getItem('kioskKey') || 'unknown');
 
     let response;
     try {
-      response = await fetch('https://eeelab.xyz/photobooth/upload_and_qr.php', {
+      response = await fetch('https://snapbooth.eeelab.xyz/upload_and_qr.php', {
         method: 'POST',
         body: formData,
         mode: 'cors',
@@ -187,6 +199,7 @@ const App: React.FC = () => {
 
     const formData = new FormData();
     formData.append('video', mediaBlob, fileName);
+    formData.append('device_key', localStorage.getItem('kioskKey') || 'unknown');
 
     // Debug: Check FormData content
     console.debug('[UPLOAD-DEBUG] FormData contents:', 
@@ -201,7 +214,7 @@ const App: React.FC = () => {
     let response;
     try {
       console.debug('[UPLOAD-DEBUG] Sending request to server...');
-      response = await fetch('https://eeelab.xyz/photobooth/uploadvideo_and_qr.php', {
+      response = await fetch('https://snapbooth.eeelab.xyz/uploadvideo_and_qr.php', {
         method: 'POST',
         body: formData,
         mode: 'cors',
@@ -470,6 +483,27 @@ const App: React.FC = () => {
     }
   }, [recordedSlowMoVideoUrl, clearModal]);
 
+  // Save handler for photo strip
+  const handleSavePhotoStrip = async (stripUrl: string) => {
+    setModalContent({ type: 'loading', message: 'Uploading photo strip to cloud...' });
+    try {
+      const qrLink = await uploadToServer(stripUrl);
+      setModalContent({
+        type: 'qr',
+        message: 'Scan QR to view & download your photo strip!',
+        qrData: qrLink,
+        itemType: 'photo',
+      });
+    } catch (error) {
+      setModalContent({
+        type: 'error',
+        message: `Failed to save photo strip: ${(error as Error).message}`,
+        itemType: 'photo',
+        duration: 5000,
+      });
+    }
+  };
+
   useEffect(() => {
     if (currentView === 'EDITOR' && !capturedImage) {
       console.warn("No captured image for EDITOR view, redirecting to CAMERA.");
@@ -518,6 +552,10 @@ const App: React.FC = () => {
       setCurrentView('MENU');
     }
   }, [currentView]);
+
+  if (!pinUnlocked) {
+    return <PinGate onUnlock={() => setPinUnlocked(true)} />;
+  }
 
   const renderContent = () => {
     switch (currentView) {
@@ -574,17 +612,28 @@ const App: React.FC = () => {
         }
         return <SlowMoPreviewView videoUrl={recordedSlowMoVideoUrl} onRetake={handleSlowMoVideoRetake} onSave={handleSlowMoVideoSave} onBackToMenu={handleBackToMenu} />;
       case 'PHOTO_STRIP':
-        return <PhotoStripView onBackToMenu={handleBackToMenu} />;
+        return <PhotoStripView onBackToMenu={handleBackToMenu} onSave={handleSavePhotoStrip} />;
       default:
         return <MenuPage onSelectView={handleMenuSelection} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-0 sm:p-4 selection:bg-purple-500 selection:text-white antialiased">
+    <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-0 sm:p-4 selection:bg-purple-500 selection:text-white antialiased relative">
       <div className="w-full h-full sm:h-auto sm:max-w-5xl flex-grow sm:flex-grow-0 flex items-center justify-center">
         {renderContent()}
       </div>
+      
+      {/* Admin Settings Button */}
+      {isAdmin && (
+        <button
+          onClick={() => setShowAdminSettings(true)}
+          className="fixed top-4 right-4 z-40 p-3 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg transition-colors duration-200"
+          title="Admin Settings"
+        >
+          <CogIcon className="w-6 h-6" />
+        </button>
+      )}
       {modalContent && (
         <Modal onClose={modalContent.type !== 'loading' ? clearModal : undefined}>
           {modalContent.type === 'loading' && (
@@ -622,6 +671,13 @@ const App: React.FC = () => {
           )}
         </Modal>
       )}
+      
+      {/* Admin Settings Modal */}
+      <AdminSettingsModal
+        isOpen={showAdminSettings}
+        onClose={() => setShowAdminSettings(false)}
+        onLogout={handleAdminLogout}
+      />
     </div>
   );
 };
