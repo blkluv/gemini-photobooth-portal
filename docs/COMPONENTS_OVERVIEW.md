@@ -2,13 +2,13 @@
 
 This document lists and briefly describes the React components in the `components/` directory.
 
-- `VideoCaptureView.tsx`: Handles video capture functionality.
+- `VideoCaptureView.tsx`: Handles video capture functionality, including canvas-based frame capture for GIF/slowmo.
 - `SlowMoPreviewView.tsx`: Displays a preview of slow-motion videos.
 - `VideoPreviewView.tsx`: Shows a preview of captured videos.
-- `SlowMoCaptureView.tsx`: Handles slow-motion video capture.
-- `BoomerangCaptureView.tsx`: Handles boomerang-style video capture.
-- `LandingPage.tsx`: The landing page of the application.
-- `BoomerangPreviewView.tsx`: Shows a preview of boomerang videos.
+- `SlowMoCaptureView.tsx`: Handles slow-motion video capture, with canvas frame capture for GIF export.
+- `BoomerangCaptureView.tsx`: Handles boomerang-style video capture and frame extraction for GIFs.
+- `BoomerangPreviewView.tsx`: Shows a preview of boomerang videos and allows GIF export.
+- `LandingPage.tsx`: The animated landing page with dark mode, WhatsApp QR, and trial key request.
 - `ScanQrPage.tsx`: Page for scanning QR codes.
 - `Button.tsx`: Reusable button component.
 - `CameraView.tsx`: Manages camera view and controls.
@@ -19,4 +19,7 @@ This document lists and briefly describes the React components in the `component
 - `PrintView.tsx`: Handles print view functionality.
 - `Spinner.tsx`: Loading spinner component.
 - `StickerPalette.tsx`: UI for selecting stickers.
+- `PhotoStripView.tsx`: Takes 3 photos and creates a printable photo strip.
+- `PinGate.tsx`: Handles event/trial key entry, admin PIN, and trial expiry countdown/lockout.
+- `AdminSettingsModal.tsx`: Modal for admin settings and logout.
 - `icons/`: Contains icon components used throughout the app. 

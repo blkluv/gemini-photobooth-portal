@@ -19,20 +19,20 @@ export const SlowMoPreviewView: React.FC<SlowMoPreviewViewProps> = ({ videoUrl, 
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setVideoError(null);
-    setIsLoading(true);
+      setVideoError(null);
+      setIsLoading(true);
   }, [videoUrl]);
 
   const handleError = () => {
     setVideoError('Failed to play video. Please try retaking or check your browser support.');
-    setIsLoading(false);
-  };
+        setIsLoading(false);
+      };
 
-  const handleLoadedData = () => {
-    setIsLoading(false);
+      const handleLoadedData = () => {
+        setIsLoading(false);
     if (videoRef.current) {
       videoRef.current.playbackRate = SLOW_MOTION_RATE;
-    }
+          }
   };
 
   return (
@@ -61,19 +61,19 @@ export const SlowMoPreviewView: React.FC<SlowMoPreviewViewProps> = ({ videoUrl, 
             <p className="ml-4 text-xl">Loading slow-motion video...</p>
           </div>
         ) : null}
-        <video
-          ref={videoRef}
+          <video
+            ref={videoRef}
           src={videoUrl}
-          controls
-          autoPlay
-          playsInline
-          loop
-          className="w-full h-full object-contain"
-          style={{ maxWidth: PHOTO_WIDTH, maxHeight: PHOTO_HEIGHT }}
-          aria-label="Recorded slow-motion video preview"
+            controls
+            autoPlay
+            playsInline
+            loop
+            className="w-full h-full object-contain"
+            style={{ maxWidth: PHOTO_WIDTH, maxHeight: PHOTO_HEIGHT }}
+            aria-label="Recorded slow-motion video preview"
           onError={handleError}
           onLoadedData={handleLoadedData}
-        />
+          />
       </div>
       <div className="mt-8 flex flex-wrap justify-center gap-4 w-full">
         <Button onClick={onRetake} variant="secondary" className="flex-grow sm:flex-grow-0">

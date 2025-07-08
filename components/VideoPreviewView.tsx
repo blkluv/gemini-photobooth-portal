@@ -17,17 +17,17 @@ export const VideoPreviewView: React.FC<VideoPreviewViewProps> = ({ videoUrl, on
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setVideoError(null);
-    setIsLoading(true);
+      setVideoError(null);
+      setIsLoading(true);
   }, [videoUrl]);
 
   const handleError = () => {
     setVideoError('Failed to play video. Please try retaking or check your browser support.');
-    setIsLoading(false);
-  };
+        setIsLoading(false);
+      };
 
-  const handleLoadedData = () => {
-    setIsLoading(false);
+      const handleLoadedData = () => {
+        setIsLoading(false);
   };
 
   return (
@@ -56,16 +56,16 @@ export const VideoPreviewView: React.FC<VideoPreviewViewProps> = ({ videoUrl, on
             <p className="ml-4 text-xl">Loading video...</p>
           </div>
         ) : null}
-        <video
-          ref={videoRef}
+          <video
+            ref={videoRef}
           src={videoUrl}
-          controls
-          autoPlay
-          playsInline
-          loop
-          className="w-full h-full object-contain"
-          style={{ maxWidth: PHOTO_WIDTH, maxHeight: PHOTO_HEIGHT }}
-          aria-label="Recorded video preview"
+            controls
+            autoPlay
+            playsInline
+            loop
+            className="w-full h-full object-contain"
+            style={{ maxWidth: PHOTO_WIDTH, maxHeight: PHOTO_HEIGHT }}
+            aria-label="Recorded video preview"
           onError={handleError}
           onLoadedData={handleLoadedData}
         />

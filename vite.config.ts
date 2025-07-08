@@ -15,6 +15,9 @@ export default defineConfig(({ mode }) => {
       },
       css: {
         postcss: './postcss.config.js',
+      },
+      server: {
+        spaFallback: true
       }
     };
 });

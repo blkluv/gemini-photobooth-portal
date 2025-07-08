@@ -1,6 +1,18 @@
 # Feature Ideas
 
-This document is for brainstorming and prioritizing future features for the project.
+## Implemented Features
+- Client-side GIF and Boomerang creation (canvas-based, no ffmpeg)
+- Slowmo video capture and playback (browser-native, with user guidance)
+- Universal QR sharing for all media types
+- Key system (event keys, 1-hour trial keys, localStorage expiry, admin PIN)
+- Modern landing page (dark mode, WhatsApp QR, toast notifications, trial key request)
+- Backend key validation and trial key emailing (PHP APIs)
+- Improved upload and conversion logic (only convert WebM to MP4, robust error handling)
+- Photo strip mode
+- Admin settings modal
+- Toastify notification integration (with updated usage)
+- Deployment structure guidance (separate landing/app, public folder, cache busting)
+- Mobile/browser compatibility fixes (frame extraction, GIF.js loading, etc.)
 
 ## Ideas
 - User authentication and profiles

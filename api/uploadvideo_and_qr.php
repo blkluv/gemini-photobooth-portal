@@ -172,10 +172,10 @@ log_debug("Upload attempt", [
         // Do not reject or delete the file, just log a warning and continue
     }
     else {
-        log_debug("ffprobe validation success", [
-            'file' => $destination,
-            'duration' => $duration
-        ]);
+    log_debug("ffprobe validation success", [
+        'file' => $destination,
+        'duration' => $duration
+    ]);
     }
     // --- end ffprobe validation ---
 
