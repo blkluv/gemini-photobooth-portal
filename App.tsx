@@ -18,7 +18,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   // Hide NavBar on /app route
   const hideNav = location.pathname.startsWith('/app');
-  return (
+        return (
     <>
       {!hideNav && <NavBar />}
       {children}

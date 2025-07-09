@@ -7,7 +7,6 @@ This document summarizes the PHP backend scripts and their roles in the project.
 - `upload_debug_functions.php`: Contains debugging functions for the upload process.
 - `validate_key.php`: Validates event and trial keys for app access.
 - `request_trial.php`: Handles trial key requests and sends trial keys via email.
-- `test_upload.html`: HTML page for testing the upload functionality.
 - `upload_debug.log`: Log file for tracking upload-related issues.
 
 ## Key/Trial System
@@ -17,4 +16,8 @@ This document summarizes the PHP backend scripts and their roles in the project.
 
 ## Improved Upload/Conversion Logic
 - Only attempts MP4 conversion for WebM files.
-- Robust error handling and logging for uploads and conversions. 
+- Robust error handling and logging for uploads and conversions.
+
+## API Structure
+- All backend PHP endpoints are in the `api/` directory, clearly separated from frontend code.
+- Key validation and trial request APIs are robust and documented. 

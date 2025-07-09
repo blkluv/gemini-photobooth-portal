@@ -1,0 +1,121 @@
+# Backend Overview
+
+This document summarizes the PHP backend scripts and their roles in the project.
+
+- `uploadvideo_and_qr.php`: Handles video uploads and QR code generation/processing. Only converts WebM to MP4 if needed.
+- `view_media.php`: Provides functionality to view uploaded media files (photo, video, slowmo, boomerang, GIF).
+- `upload_debug_functions.php`: Contains debugging functions for the upload process.
+- `validate_key.php`: Validates event and trial keys for app access.
+- `request_trial.php`: Handles trial key requests and sends trial keys via email.
+- `test_upload.html`: HTML page for testing the upload functionality.
+- `upload_debug.log`: Log file for tracking upload-related issues.
+
+## Key/Trial System
+- Supports event keys and 1-hour trial keys.
+- Trial keys are delivered via email and enforced with localStorage expiry on the frontend.
+- Admin PIN unlocks admin settings modal.
+
+## Improved Upload/Conversion Logic
+- Only attempts MP4 conversion for WebM files.
+- Robust error handling and logging for uploads and conversions. 
+
+# Components Overview
+
+This document lists and briefly describes the React components in the `components/` directory.
+
+- `VideoCaptureView.tsx`: Handles video capture functionality, including canvas-based frame capture for GIF/slowmo.
+- `SlowMoPreviewView.tsx`: Displays a preview of slow-motion videos.
+- `VideoPreviewView.tsx`: Shows a preview of captured videos.
+- `SlowMoCaptureView.tsx`: Handles slow-motion video capture, with canvas frame capture for GIF export.
+- `BoomerangCaptureView.tsx`: Handles boomerang-style video capture and frame extraction for GIFs.
+- `BoomerangPreviewView.tsx`: Shows a preview of boomerang videos and allows GIF export.
+- `LandingPage.tsx`: The animated landing page with dark mode, WhatsApp QR, and trial key request.
+- `ScanQrPage.tsx`: Page for scanning QR codes.
+- `Button.tsx`: Reusable button component.
+- `CameraView.tsx`: Manages camera view and controls.
+- `FilterPalette.tsx`: UI for selecting filters.
+- `MenuPage.tsx`: Main menu page.
+- `Modal.tsx`: Reusable modal dialog component.
+- `PhotoEditor.tsx`: Provides photo editing features.
+- `PrintView.tsx`: Handles print view functionality.
+- `Spinner.tsx`: Loading spinner component.
+- `StickerPalette.tsx`: UI for selecting stickers.
+- `PhotoStripView.tsx`: Takes 3 photos and creates a printable photo strip.
+- `PinGate.tsx`: Handles event/trial key entry, admin PIN, and trial expiry countdown/lockout.
+- `AdminSettingsModal.tsx`: Modal for admin settings and logout.
+- `icons/`: Contains icon components used throughout the app. 
+
+# Feature Ideas
+
+## Implemented Features
+- Client-side GIF and Boomerang creation (canvas-based, no ffmpeg)
+- Slowmo video capture and playback (browser-native, with user guidance)
+- Universal QR sharing for all media types
+- Key system (event keys, 1-hour trial keys, localStorage expiry, admin PIN)
+- Modern landing page (dark mode, WhatsApp QR, toast notifications, trial key request)
+- Backend key validation and trial key emailing (PHP APIs)
+- Improved upload and conversion logic (only convert WebM to MP4, robust error handling)
+- Photo strip mode
+- Admin settings modal
+- Toastify notification integration (with updated usage)
+- Deployment structure guidance (separate landing/app, public folder, cache busting)
+- Mobile/browser compatibility fixes (frame extraction, GIF.js loading, etc.)
+
+## Ideas
+- User authentication and profiles
+- Gallery view for uploaded media
+- Social sharing options
+- Advanced photo/video editing tools
+- Analytics dashboard for usage stats
+- Customizable print templates
+- Admin panel for managing uploads
+- Multi-language support
+- Integration with cloud storage
+
+Feel free to add more ideas below! 
+
+# Project Structure
+
+This document provides an overview of the main directories and files in the project.
+
+## Root Directory
+- `App.tsx`, `index.tsx`, `index.html`, `index.css`: Main entry points for the React frontend.
+- `package.json`, `package-lock.json`: Node.js project configuration and dependencies.
+- `vite.config.ts`, `tsconfig.json`, `tailwind.config.js`, `postcss.config.js`: Build, TypeScript, and styling configurations.
+- `README.md`: Basic setup instructions.
+- `.gitignore`: Git version control ignore rules.
+- `constants.ts`, `types.ts`, `metadata.json`: Project constants, TypeScript types, and metadata.
+
+## Directories
+- `components/`: React components for UI and views.
+- `utils/`: Utility scripts for media processing and helpers.
+- `services/`: API and business logic services.
+- `public/`: Static assets served by the frontend, including `landing.html` (marketing/landing page).
+- `api/`: PHP backend scripts for uploads, key validation, trial requests, etc.
+- `photobooth/`: Contains uploads and possibly other photobooth-related files.
+- `dist/`: Build output directory.
+- `node_modules/`: Installed Node.js dependencies.
+
+## Backend (PHP)
+- `uploadvideo_and_qr.php`, `view_media.php`, `upload_debug_functions.php`: PHP scripts for media upload, viewing, and debugging.
+- `validate_key.php`, `request_trial.php`: PHP APIs for event/trial key validation and trial key email delivery.
+- `test_upload.html`: HTML page for testing uploads.
+- `upload_debug.log`: Log file for upload debugging.
+
+## Deployment Structure
+- `public/landing.html`: Marketing/landing page at the root.
+- `index.html`: React app entry point (can be in a subdirectory for separation).
+- `api/`: All backend PHP endpoints.
+- `photobooth/uploads/`: Uploaded media storage.
+- Clear separation between landing, app, and backend for maintainability and scalability. 
+
+# Utils Overview
+
+This document describes the utility scripts in the `utils/` directory and their functions.
+ 
+- `boomerangToGif.ts`: Converts boomerang video sequences to GIF format using GIF.js and canvas frame capture.
+- `boomerangToWebm.ts`: Converts boomerang video sequences to WebM format.
+- `whammy.js`: Helper for video encoding or processing (minified or bundled).
+- `imageUtils.ts`: Provides image processing utilities (e.g., resizing, filtering, canvas frame extraction for GIF/slowmo).
+- **Canvas Frame Capture**: Used in video/boomerang/slowmo components to reliably extract frames for GIF creation, especially on mobile browsers.
+- **GIF.js Integration**: Used for client-side GIF encoding from captured frames. 

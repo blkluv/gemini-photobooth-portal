@@ -14,7 +14,7 @@ This document provides an overview of the main directories and files in the proj
 - `components/`: React components for UI and views.
 - `utils/`: Utility scripts for media processing and helpers.
 - `services/`: API and business logic services.
-- `public/`: Static assets served by the frontend, including `landing.html` (marketing/landing page).
+- `public/`: Static assets served by the frontend, including all images in `public/images` and `landing.html` (marketing/landing page).
 - `api/`: PHP backend scripts for uploads, key validation, trial requests, etc.
 - `photobooth/`: Contains uploads and possibly other photobooth-related files.
 - `dist/`: Build output directory.
@@ -23,7 +23,6 @@ This document provides an overview of the main directories and files in the proj
 ## Backend (PHP)
 - `uploadvideo_and_qr.php`, `view_media.php`, `upload_debug_functions.php`: PHP scripts for media upload, viewing, and debugging.
 - `validate_key.php`, `request_trial.php`: PHP APIs for event/trial key validation and trial key email delivery.
-- `test_upload.html`: HTML page for testing uploads.
 - `upload_debug.log`: Log file for upload debugging.
 
 ## Deployment Structure
@@ -31,4 +30,7 @@ This document provides an overview of the main directories and files in the proj
 - `index.html`: React app entry point (can be in a subdirectory for separation).
 - `api/`: All backend PHP endpoints.
 - `photobooth/uploads/`: Uploaded media storage.
+- All images are in `public/images` with descriptive names.
+- No `/app` folder in the root or public.
+- SPA fallback is handled by Vite and server config for proper React routing in dev and production.
 - Clear separation between landing, app, and backend for maintainability and scalability. 

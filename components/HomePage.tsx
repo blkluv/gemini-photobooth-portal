@@ -5,18 +5,22 @@ const HERO_IMAGE = '/images/hero-1.png';
 const HERO_IMAGE_ALT = '/images/hero-2.png'; // Optionally use for alternate hero or as a background
 const ABOUT_IMAGE = '/images/about-1.png';
 const ABOUT_IMAGE_2 = '/images/about-2.png';
-const TESTIMONIAL_IMAGE_1 = '/images/testimonial-1.png';
-const TESTIMONIAL_IMAGE_2 = '/images/testimonial-2.png';
+const TESTIMONIAL_IMAGE_1 = '/images/testimonial-1.jpg';
+const TESTIMONIAL_IMAGE_2 = '/images/testimonial-2.jpg';
+const TESTIMONIAL_IMAGE_3 = '/images/testimonial-3.jpg';
 const SERVICE_IMAGE_1 = '/images/service-1.png';
 const SERVICE_IMAGE_2 = '/images/service-2.png';
+const SERVICE_IMAGE_GIF = '/images/service-gifbooth-1.jpg';
+const SERVICE_IMAGE_360 = '/images/service-360spin-1.jpg';
+const SERVICE_IMAGE_GREEN = '/images/service-greenscreen-1.jpg';
+const SERVICE_IMAGE_KIOSK = '/images/service-printerkiosk-1.jpg';
 const CONTACT_IMAGE_1 = '/images/contact-1.png';
 const CONTACT_IMAGE_2 = '/images/contact-2.png';
 const BG_IMAGE_1 = '/images/bg-1.png';
 const BG_IMAGE_2 = '/images/bg-2.png';
 const CLIENT_LOGOS = [
-  'https://upload.wikimedia.org/wikipedia/commons/a/a7/React-icon.svg',
-  'https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg',
-  'https://upload.wikimedia.org/wikipedia/commons/6/6a/JavaScript-logo.png',
+  '/images/client-logo-1.png',
+  '/images/client-logo-2.png',
 ];
 const TESTIMONIALS = [
   {
@@ -132,9 +136,13 @@ const ServicesSection = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
       {SERVICES.map((s, i) => (
         <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col items-center text-center hover:scale-105 transition-transform">
-          {/* Use service images for the first two cards as examples */}
+          {/* Use service images for the first two cards as examples, and new images for others */}
           {i === 0 && <img src={SERVICE_IMAGE_1} alt={s.title} className="w-full h-32 object-cover rounded mb-4" />}
           {i === 1 && <img src={SERVICE_IMAGE_2} alt={s.title} className="w-full h-32 object-cover rounded mb-4" />}
+          {i === 2 && <img src={SERVICE_IMAGE_GIF} alt={s.title} className="w-full h-32 object-cover rounded mb-4" />}
+          {i === 3 && <img src={SERVICE_IMAGE_GREEN} alt={s.title} className="w-full h-32 object-cover rounded mb-4" />}
+          {i === 4 && <img src={SERVICE_IMAGE_360} alt={s.title} className="w-full h-32 object-cover rounded mb-4" />}
+          {i === 5 && <img src={SERVICE_IMAGE_KIOSK} alt={s.title} className="w-full h-32 object-cover rounded mb-4" />}
           <div className="text-5xl mb-4">{s.icon}</div>
           <div className="text-lg font-bold text-purple-600 dark:text-purple-400 mb-2">{s.title}</div>
           <p className="text-gray-600 dark:text-gray-300 mb-4">{s.desc}</p>
@@ -188,9 +196,9 @@ const TestimonialsSection = () => (
   <section className="max-w-4xl mx-auto w-full py-16" id="testimonials">
     <h2 className="text-3xl font-bold text-center text-gray-800 dark:text-white mb-10">Clients & Testimonials</h2>
     <div className="flex flex-wrap justify-center gap-8 mb-8">
-      {/* Add testimonial images */}
       <img src={TESTIMONIAL_IMAGE_1} alt="Testimonial 1" className="h-24 w-24 object-cover rounded-full border-4 border-purple-200 dark:border-purple-400" />
       <img src={TESTIMONIAL_IMAGE_2} alt="Testimonial 2" className="h-24 w-24 object-cover rounded-full border-4 border-purple-200 dark:border-purple-400" />
+      <img src={TESTIMONIAL_IMAGE_3} alt="Testimonial 3" className="h-24 w-24 object-cover rounded-full border-4 border-purple-200 dark:border-purple-400" />
     </div>
     <div className="flex flex-col md:flex-row gap-8 justify-center items-stretch">
       {TESTIMONIALS.map((t, i) => (

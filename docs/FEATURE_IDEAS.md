@@ -8,11 +8,15 @@
 - Modern landing page (dark mode, WhatsApp QR, toast notifications, trial key request)
 - Backend key validation and trial key emailing (PHP APIs)
 - Improved upload and conversion logic (only convert WebM to MP4, robust error handling)
-- Photo strip mode
-- Admin settings modal
+- Photo strip mode (take 3 photos and print a classic photo strip)
+- Admin settings modal with multi-tab support (General, Security, Analytics, Branding, Support)
+- AI sticker generation in Photo Editor (Gemini API integration)
 - Toastify notification integration (with updated usage)
-- Deployment structure guidance (separate landing/app, public folder, cache busting)
+- SPA routing and fallback fixes (no /app folder conflicts, Vite/React best practices)
+- Organized service, testimonial, and client images in public/images with descriptive names
+- Grid alignment and improved service display (single grid for all services)
 - Mobile/browser compatibility fixes (frame extraction, GIF.js loading, etc.)
+- Deployment structure guidance (separate landing/app, public folder, cache busting)
 
 ## Ideas
 - User authentication and profiles

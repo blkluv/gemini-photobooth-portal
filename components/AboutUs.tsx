@@ -2,6 +2,7 @@ import React from 'react';
 
 const ABOUT_IMAGE = '/images/about-1.png';
 const BOOTH_IMAGE = '/images/about-2.png';
+const TESTIMONIAL_IMAGE_3 = '/images/testimonial-3.jpg';
 
 const AboutUs: React.FC = () => (
   <div className="bg-gradient-to-br from-blue-100 to-purple-200 dark:from-gray-900 dark:to-gray-800 min-h-screen py-16">
@@ -17,6 +18,7 @@ const AboutUs: React.FC = () => (
         </ul>
         <p className="italic text-gray-500 dark:text-gray-400">"We started SnapBooth to bring people together and capture memories that last a lifetime."</p>
       </div>
+      <img src={TESTIMONIAL_IMAGE_3} alt="Happy Client" className="w-32 h-32 rounded-full shadow-lg object-cover ml-4" />
     </section>
     <section className="max-w-3xl mx-auto w-full flex flex-col md:flex-row items-center gap-10">
       <div className="flex-1">

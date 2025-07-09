@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './Button';
-import { validateKey } from '../app/keyGate';
+import { validateKey } from '../backend-app/keyGate';
 
 const BOOTH_PIN = '1234'; // Change this per booth
 const ADMIN_PIN = '9999'; // Your admin PIN

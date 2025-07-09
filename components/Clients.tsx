@@ -1,35 +1,32 @@
 import React from 'react';
 
 const CLIENT_LOGOS = [
-  'https://upload.wikimedia.org/wikipedia/commons/a/a7/React-icon.svg',
-  'https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg',
-  'https://upload.wikimedia.org/wikipedia/commons/6/6a/JavaScript-logo.png',
-  'https://upload.wikimedia.org/wikipedia/commons/1/1b/IBM_logo.svg',
-  'https://upload.wikimedia.org/wikipedia/commons/5/51/Google.png',
+  '/images/client-logo-1.png',
+  '/images/client-logo-2.png',
 ];
 const TESTIMONIALS = [
   {
     quote: 'SnapBooth made our company gala unforgettable. Guests loved the instant prints & boomerang videos!',
     author: 'Jane, Event Planner',
-    img: '/images/testimonial-1.png',
+    img: '/images/testimonial-1.jpg',
   },
   {
     quote: 'The 360 Spin Booth was a hit at our wedding. Everyone had so much fun!',
     author: 'Alex & Sam',
-    img: '/images/testimonial-2.png',
+    img: '/images/testimonial-2.jpg',
   },
   {
     quote: 'Professional, fun, and reliable. Highly recommended for any event!',
     author: 'Michael, Corporate Client',
-    img: '/images/testimonial-2.png',
+    img: '/images/testimonial-3.jpg',
   },
 ];
 
 const Clients: React.FC = () => (
   <div className="bg-gradient-to-br from-blue-100 to-purple-200 dark:from-gray-900 dark:to-gray-800 min-h-screen py-16">
     <div className="flex flex-wrap justify-center gap-8 mb-12">
-      <img src="/images/testimonial-1.png" alt="Testimonial Hero 1" className="h-32 w-32 object-cover rounded-full border-4 border-purple-200 dark:border-purple-400" />
-      <img src="/images/testimonial-2.png" alt="Testimonial Hero 2" className="h-32 w-32 object-cover rounded-full border-4 border-purple-200 dark:border-purple-400" />
+      <img src="/images/testimonial-1.jpg" alt="Testimonial Hero 1" className="h-32 w-32 object-cover rounded-full border-4 border-purple-200 dark:border-purple-400" />
+      <img src="/images/testimonial-2.jpg" alt="Testimonial Hero 2" className="h-32 w-32 object-cover rounded-full border-4 border-purple-200 dark:border-purple-400" />
     </div>
     <h1 className="text-4xl font-bold text-center text-gray-800 dark:text-white mb-10">Our Clients</h1>
     <div className="flex flex-wrap justify-center gap-8 mb-12">
