@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
+import { CustomQRCode } from './CustomQRCode';
 import { CameraView } from './CameraView';
 import { PhotoEditor } from './PhotoEditor';
 import { PrintView } from './PrintView';
@@ -46,6 +47,8 @@ const PhotoboothApp: React.FC = () => {
   const [recordedSlowMoVideoUrl, setRecordedSlowMoVideoUrl] = useState<string | null>(null);
   const [recordedVideoFrames, setRecordedVideoFrames] = useState<string[]>([]);
   const [recordedSlowMoFrames, setRecordedSlowMoFrames] = useState<string[]>([]);
+  const [qrFgColor, setQrFgColor] = useState('#000000');
+  const [qrBgColor, setQrBgColor] = useState('#FFFFFF');
   const photoEditorRef = useRef<{ generateFinalImage: () => Promise<string | null> }>(null);
 
   const clearModal = useCallback(() => {
@@ -551,6 +554,8 @@ const PhotoboothApp: React.FC = () => {
       <div className="w-full h-full sm:h-auto sm:max-w-5xl flex-grow sm:flex-grow-0 flex items-center justify-center">
         {renderContent()}
       </div>
+
+      
       {isAdmin && (
         <button
           onClick={() => setShowAdminSettings(true)}
@@ -571,9 +576,12 @@ const PhotoboothApp: React.FC = () => {
           {modalContent.type === 'qr' && modalContent.qrData && (
             <div className="flex flex-col items-center text-center p-4">
               <h3 className="text-xl font-semibold mb-4">{modalContent.message}</h3>
-              <div className="p-2 bg-white rounded-md inline-block shadow-lg">
-                <QRCodeCanvas value={modalContent.qrData} size={256} level="H" />
-              </div>
+              <CustomQRCode 
+                value={modalContent.qrData} 
+                size={256} 
+                fgColor={qrFgColor}
+                bgColor={qrBgColor}
+              />
               <p className="text-sm text-slate-400 mt-3">
                 {modalContent.itemType === 'photo' && "Your photo is saved to the cloud."}
                 {modalContent.itemType === 'boomerang' && "Your Boomerang preview is saved. Full animation coming soon."}
@@ -602,6 +610,8 @@ const PhotoboothApp: React.FC = () => {
         onClose={() => setShowAdminSettings(false)}
         onLogout={handleAdminLogout}
       />
+      
+
     </div>
   );
 };

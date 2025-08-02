@@ -92,3 +92,10 @@ export const XMarkIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
   </svg>
 );
+
+// Palette Icon (for color picker)
+export const PaletteIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4.098 19.902a3.75 3.75 0 005.304 0l6.401-6.402M6.75 19A7.5 7.5 0 016 18.75v-.352a3.75 3.75 0 00-1.098-2.704L4.098 19.902zM6.75 19A7.5 7.5 0 0112 18.75v-.352a3.75 3.75 0 00-1.098-2.704L4.098 19.902zM6.75 19A7.5 7.5 0 0112 18.75v-.352a3.75 3.75 0 00-1.098-2.704L4.098 19.902zM6.75 19A7.5 7.5 0 0112 18.75v-.352a3.75 3.75 0 00-1.098-2.704L4.098 19.902z" />
+  </svg>
+);
