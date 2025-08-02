@@ -8,6 +8,7 @@ import ContactUs from './components/ContactUs';
 import PhotoboothApp from './components/PhotoboothApp';
 import NavBar from './components/NavBar';
 import PinGate from './components/PinGate';
+import { CameraProvider } from './components/CameraContext';
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   const isUnlocked = localStorage.getItem('photoboothPin') === '1';
@@ -40,7 +41,9 @@ const App: React.FC = () => {
           {/* Private/locked route */}
           <Route path="/app" element={
             <PrivateRoute>
-              <PhotoboothApp />
+              <CameraProvider>
+                <PhotoboothApp />
+              </CameraProvider>
             </PrivateRoute>
           } />
           {/* Fallback */}
