@@ -11,6 +11,7 @@ export interface PhotoStripTemplate {
   height: number;
   preview: string; // CSS class or description
   description: string;
+  footerHeight?: number; // reserved space for footer/signature band
 }
 
 const TEMPLATES: PhotoStripTemplate[] = [
@@ -22,7 +23,8 @@ const TEMPLATES: PhotoStripTemplate[] = [
     width: 320,
     height: 960,
     preview: 'grid-cols-1 grid-rows-3',
-    description: 'Traditional 3-photo vertical strip'
+    description: 'Traditional 3-photo vertical strip',
+    footerHeight: 120,
   },
   {
     id: '4-vertical',
@@ -32,7 +34,8 @@ const TEMPLATES: PhotoStripTemplate[] = [
     width: 320,
     height: 1280,
     preview: 'grid-cols-1 grid-rows-4',
-    description: '4-photo vertical strip'
+    description: '4-photo vertical strip',
+    footerHeight: 140,
   },
   {
     id: '4-landscape',
@@ -42,7 +45,8 @@ const TEMPLATES: PhotoStripTemplate[] = [
     width: 640,
     height: 320,
     preview: 'grid-cols-4 grid-rows-1',
-    description: '4-photo horizontal strip'
+    description: '4-photo horizontal strip',
+    footerHeight: 48,
   },
   {
     id: '3-landscape',
@@ -52,7 +56,8 @@ const TEMPLATES: PhotoStripTemplate[] = [
     width: 480,
     height: 320,
     preview: 'grid-cols-3 grid-rows-1',
-    description: '3-photo horizontal strip'
+    description: '3-photo horizontal strip',
+    footerHeight: 48,
   },
   {
     id: '2-uneven',
@@ -62,7 +67,8 @@ const TEMPLATES: PhotoStripTemplate[] = [
     width: 480,
     height: 320,
     preview: 'grid-cols-2 grid-rows-1',
-    description: '2-photo with different sizes'
+    description: '2-photo with different sizes',
+    footerHeight: 48,
   }
 ];
 
@@ -78,8 +84,8 @@ const PhotoStripTemplateSelector: React.FC<PhotoStripTemplateSelectorProps> = ({
   const renderTemplatePreview = (template: PhotoStripTemplate) => {
     const isLandscape = template.layout === 'landscape';
     const containerClass = isLandscape 
-      ? 'w-40 h-24 bg-white rounded-lg shadow-md p-2' 
-      : 'w-24 h-40 bg-white rounded-lg shadow-md p-2';
+      ? 'w-40 h-24 bg-white rounded-lg shadow-md p-2 relative' 
+      : 'w-24 h-40 bg-white rounded-lg shadow-md p-2 relative';
     
     const gridClass = template.preview;
     
@@ -95,6 +101,10 @@ const PhotoStripTemplateSelector: React.FC<PhotoStripTemplateSelectorProps> = ({
             />
           ))}
         </div>
+        {/* Footer band preview */}
+        {template.footerHeight && (
+          <div className="absolute left-1 right-1 bottom-1 h-2 bg-gray-200 rounded-sm border border-gray-300" />
+        )}
       </div>
     );
   };
@@ -137,6 +147,7 @@ const PhotoStripTemplateSelector: React.FC<PhotoStripTemplateSelectorProps> = ({
                   <div>Photos: {template.photoCount}</div>
                   <div>Layout: {template.layout}</div>
                   <div>Size: {template.width}×{template.height}px</div>
+                  {template.footerHeight && <div>Footer: {template.footerHeight}px</div>}
                 </div>
               </div>
             </div>

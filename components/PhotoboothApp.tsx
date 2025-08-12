@@ -3,6 +3,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { CustomQRCode } from './CustomQRCode';
 import { CameraView } from './CameraView';
 import { PhotoEditor } from './PhotoEditor';
+import { ChromaPhotoEditor } from './ChromaPhotoEditor';
 import { PrintView } from './PrintView';
 import { Modal } from './Modal';
 import { LandingPage } from './LandingPage';
@@ -49,6 +50,7 @@ const PhotoboothApp: React.FC = () => {
   const [recordedSlowMoFrames, setRecordedSlowMoFrames] = useState<string[]>([]);
   const [qrFgColor, setQrFgColor] = useState('#000000');
   const [qrBgColor, setQrBgColor] = useState('#FFFFFF');
+  const [photoType, setPhotoType] = useState<'normal' | 'chroma'>('normal');
   const photoEditorRef = useRef<{ generateFinalImage: () => Promise<string | null> }>(null);
 
   const clearModal = useCallback(() => {
@@ -83,8 +85,9 @@ const PhotoboothApp: React.FC = () => {
     setBoomerangFrames([]);
     setRecordedVideoUrl(null);
     setRecordedSlowMoVideoUrl(null);
+    setPhotoType('normal');
     clearModal();
-    const actionableViews: ViewState[] = ['CAMERA', 'BOOMERANG_CAPTURE', 'VIDEO_CAPTURE', 'SLOWMO_CAPTURE', 'PHOTO_STRIP'];
+    const actionableViews: ViewState[] = ['CAMERA', 'BOOMERANG_CAPTURE', 'VIDEO_CAPTURE', 'SLOWMO_CAPTURE', 'PHOTO_STRIP', 'CHROMA_PHOTO'];
     if (actionableViews.includes(selectedView)) {
       setCurrentView(selectedView);
     } else {
@@ -102,9 +105,15 @@ const PhotoboothApp: React.FC = () => {
     setEditedImage(imageDataUrl); 
     setAppliedStickers([]); 
     setActiveFilter(FILTERS[0]); 
+    // Set photo type based on current view
+    if (currentView === 'CHROMA_PHOTO') {
+      setPhotoType('chroma');
+    } else {
+      setPhotoType('normal');
+    }
     setCurrentView('EDITOR');
     clearModal();
-  }, [clearModal]);
+  }, [clearModal, currentView]);
 
   const handleRetake = useCallback(() => {
     setCapturedImage(null);
@@ -477,7 +486,7 @@ const PhotoboothApp: React.FC = () => {
         'BOOMERANG_CAPTURE', 'BOOMERANG_PREVIEW', 
         'VIDEO_CAPTURE', 'VIDEO_PREVIEW',
         'SLOWMO_CAPTURE', 'SLOWMO_PREVIEW',
-        'PHOTO_STRIP'
+        'PHOTO_STRIP', 'CHROMA_PHOTO'
     ];
     if (!validViews.includes(currentView)) {
       setCurrentView('MENU');
@@ -499,6 +508,24 @@ const PhotoboothApp: React.FC = () => {
       case 'EDITOR':
         if (!capturedImage) {
           return <div className="text-white flex items-center justify-center h-screen"><Spinner /> Loading Editor...</div>;
+        }
+        if (photoType === 'chroma') {
+          return (
+            <ChromaPhotoEditor
+              ref={photoEditorRef}
+              baseImage={capturedImage}
+              initialStickers={appliedStickers}
+              onStickersChange={setAppliedStickers}
+              initialFilter={activeFilter}
+              onFilterChange={setActiveFilter}
+              availableStickers={[...INITIAL_STICKERS, ...userStickers]}
+              onAddUserSticker={handleAddUserSticker}
+              onRetake={handleRetake}
+              onSave={handleSavePhoto}
+              onPrint={handlePrintPhoto}
+              onBackToMenu={handleBackToMenu}
+            />
+          );
         }
         return (
           <PhotoEditor
@@ -544,6 +571,8 @@ const PhotoboothApp: React.FC = () => {
         return <SlowMoPreviewView videoUrl={recordedSlowMoVideoUrl} onRetake={handleSlowMoVideoRetake} onSave={handleSlowMoVideoSave} onSaveAsGif={handleSlowMoSaveAsGif} onBackToMenu={handleBackToMenu} />;
       case 'PHOTO_STRIP':
         return <PhotoStripView onBackToMenu={handleBackToMenu} onSave={handleSavePhotoStrip} />;
+      case 'CHROMA_PHOTO':
+        return <CameraView onPhotoCaptured={handlePhotoCaptured} onBackToMenu={handleBackToMenu} />;
       default:
         return <MenuPage onSelectView={handleMenuSelection} />;
     }

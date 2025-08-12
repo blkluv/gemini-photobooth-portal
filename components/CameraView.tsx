@@ -7,9 +7,10 @@ import { useCamera } from './CameraContext';
 interface CameraViewProps {
   onPhotoCaptured: (imageDataUrl: string) => void;
   onBackToMenu: () => void;
+  autoNextCaptureSignal?: number; // increments to trigger next auto capture
 }
 
-export const CameraView: React.FC<CameraViewProps> = ({ onPhotoCaptured, onBackToMenu }) => {
+export const CameraView: React.FC<CameraViewProps> = ({ onPhotoCaptured, onBackToMenu, autoNextCaptureSignal }) => {
   const {
     isDSLRConnected,
     dslrStatus,
@@ -41,9 +42,9 @@ export const CameraView: React.FC<CameraViewProps> = ({ onPhotoCaptured, onBackT
       } catch (err) {
         setWebcamError("Could not access camera. Please check permissions and try again.");
         if ((err as Error).name === "NotAllowedError") {
-          setWebcamError("Camera access denied. Please allow camera access in your browser settings.");
+            setWebcamError("Camera access denied. Please allow camera access in your browser settings.");
         } else if ((err as Error).name === "NotFoundError") {
-          setWebcamError("No camera found. Please ensure a camera is connected.");
+            setWebcamError("No camera found. Please ensure a camera is connected.");
         }
       }
     } else {
@@ -69,7 +70,6 @@ export const CameraView: React.FC<CameraViewProps> = ({ onPhotoCaptured, onBackT
       // Use DSLR
       const result = await captureDSLRPhoto();
       if (result && result.success && result.filename) {
-        // You may want to fetch the image or provide a URL to the backend
         onPhotoCaptured(`DSLR:${result.filename}`);
       }
       // Error handling is managed by context
@@ -98,6 +98,20 @@ export const CameraView: React.FC<CameraViewProps> = ({ onPhotoCaptured, onBackT
       }, 1000);
     }
   }, [isDSLRConnected, captureDSLRPhoto, onPhotoCaptured, isCameraReady]);
+
+  // Auto trigger next capture when signal changes
+  useEffect(() => {
+    if (autoNextCaptureSignal === undefined) return;
+    // Only trigger if not already counting down or capturing and camera is ready
+    if (!isDSLRConnected && (!isCameraReady || countdown !== null)) return;
+    if (isDSLRConnected && isDSLRCapturing) return;
+
+    // slight delay to allow UI updates/state from previous capture
+    const t = setTimeout(() => {
+      handleSnapPhoto();
+    }, 400);
+    return () => clearTimeout(t);
+  }, [autoNextCaptureSignal, isDSLRConnected, isDSLRCapturing, isCameraReady, countdown, handleSnapPhoto]);
 
   // UI
   return (

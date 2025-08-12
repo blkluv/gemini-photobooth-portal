@@ -49,4 +49,30 @@ export const geminiService = {
       throw error; // Re-throw the original or a new error
     }
   },
+  generateBackground: async (prompt: string): Promise<string | null> => {
+    if (!ai) {
+      throw new Error("Gemini API client not initialized. API_KEY might be missing.");
+    }
+    if (!prompt) {
+      throw new Error("Prompt cannot be empty for background generation.");
+    }
+    try {
+      const fullPrompt = `${prompt}, high quality background, photorealistic, 4:3 aspect ratio`;
+      console.log(`Generating background with prompt: "${fullPrompt}" using model ${GEMINI_IMAGE_MODEL}`);
+      const response = await ai.models.generateImages({
+        model: GEMINI_IMAGE_MODEL,
+        prompt: fullPrompt,
+        config: { numberOfImages: 1, outputMimeType: 'image/png' },
+      });
+      if (response.generatedImages && response.generatedImages.length > 0) {
+        const base64 = response.generatedImages[0].image.imageBytes;
+        return `data:image/png;base64,${base64}`;
+      } else {
+        throw new Error('No background image generated.');
+      }
+    } catch (error) {
+      console.error('Gemini background generation error:', error);
+      throw error;
+    }
+  }
 };

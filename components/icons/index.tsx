@@ -99,3 +99,34 @@ export const PaletteIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M4.098 19.902a3.75 3.75 0 005.304 0l6.401-6.402M6.75 19A7.5 7.5 0 016 18.75v-.352a3.75 3.75 0 00-1.098-2.704L4.098 19.902zM6.75 19A7.5 7.5 0 0112 18.75v-.352a3.75 3.75 0 00-1.098-2.704L4.098 19.902zM6.75 19A7.5 7.5 0 0112 18.75v-.352a3.75 3.75 0 00-1.098-2.704L4.098 19.902zM6.75 19A7.5 7.5 0 0112 18.75v-.352a3.75 3.75 0 00-1.098-2.704L4.098 19.902z" />
   </svg>
 );
+
+// Star Sticker
+export const StarSticker: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg viewBox="0 0 32 32" fill="#FFD700" {...props}>
+    <polygon points="16,2 20,12 31,12 22,19 25,30 16,23 7,30 10,19 1,12 12,12" stroke="#E5B700" strokeWidth="1.5" />
+  </svg>
+);
+
+// Heart Sticker
+export const HeartSticker: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg viewBox="0 0 32 32" fill="#FF5A5F" {...props}>
+    <path d="M23.6,4.6c-2.6,0-4.9,1.7-5.6,4.1C16.3,6.3,14,4.6,11.4,4.6C7.2,4.6,4,8.1,4,12.1c0,7.1,12,15.3,12,15.3s12-8.2,12-15.3C28,8.1,24.8,4.6,23.6,4.6z" stroke="#D13B3F" strokeWidth="1.5" />
+  </svg>
+);
+
+// Smile Sticker
+export const SmileSticker: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg viewBox="0 0 32 32" fill="#FFE066" {...props}>
+    <circle cx="16" cy="16" r="14" stroke="#E5B700" strokeWidth="1.5" />
+    <ellipse cx="11" cy="14" rx="2" ry="3" fill="#333" />
+    <ellipse cx="21" cy="14" rx="2" ry="3" fill="#333" />
+    <path d="M11 21c1.5 2 8.5 2 10 0" stroke="#333" strokeWidth="1.5" fill="none" />
+  </svg>
+);
+
+// Sparkle Sticker
+export const SparkleSticker: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg viewBox="0 0 32 32" fill="#B5EAEA" {...props}>
+    <polygon points="16,2 18,12 28,16 18,20 16,30 14,20 4,16 14,12" stroke="#5AD2D2" strokeWidth="1.5" />
+  </svg>
+);

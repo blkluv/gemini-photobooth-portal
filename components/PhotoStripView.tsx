@@ -1,12 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { CameraView } from './CameraView';
-import { PHOTO_WIDTH, PHOTO_HEIGHT } from '../constants';
-import { Button } from './Button';
-import { SaveIcon, PrintIcon, RetakeIcon, ArrowLeftIcon } from './icons';
 import PhotoStripEditor from './PhotoStripEditor';
 import PhotoStripTemplateSelector, { PhotoStripTemplate } from './PhotoStripTemplateSelector';
-
-const PHOTO_COUNT = 3;
 
 interface PhotoStripViewProps {
   onBackToMenu?: () => void;
@@ -25,12 +20,17 @@ const PhotoStripView: React.FC<PhotoStripViewProps> = ({ onBackToMenu, onSave })
     setSelectedTemplate(template);
   };
 
+  // Auto-capture flow: undefined initially so first shot is manual; then increment after each capture
+  const [autoSignal, setAutoSignal] = useState<number | undefined>(undefined);
+
   // Handle photo capture from CameraView
   const handlePhotoCaptured = (dataUrl: string) => {
     setPhotos((prev) => [...prev, dataUrl]);
     const photoCount = selectedTemplate?.photoCount || 3;
     if (currentStep < photoCount) {
       setCurrentStep((prev) => prev + 1);
+      // trigger next capture automatically (start auto only after the first picture)
+      setAutoSignal((s) => (typeof s === 'number' ? s + 1 : 1));
     } else {
       setIsEditing(true);
     }
@@ -42,6 +42,7 @@ const PhotoStripView: React.FC<PhotoStripViewProps> = ({ onBackToMenu, onSave })
     setCurrentStep(1);
     setIsEditing(false);
     setSelectedTemplate(null);
+    setAutoSignal(undefined);
   };
 
   // Handle save from editor
@@ -164,11 +165,20 @@ const PhotoStripView: React.FC<PhotoStripViewProps> = ({ onBackToMenu, onSave })
       </div>
       <canvas ref={canvasRef} style={{ display: 'none' }} />
       <h2 className="text-xl font-semibold text-white mb-4">Step {currentStep} of {selectedTemplate?.photoCount || 3}</h2>
-      <CameraView 
-        onPhotoCaptured={handlePhotoCaptured}
-        onBackToMenu={onBackToMenu || handleRetake}
-      />
-      <div className="mt-6">{renderPhotoStrip()}</div>
+      <div className="w-full flex flex-col md:flex-row gap-8 items-start justify-center">
+        {/* Camera View */}
+        <div className="w-full md:w-1/2 flex flex-col items-center">
+          <CameraView 
+            onPhotoCaptured={handlePhotoCaptured}
+            onBackToMenu={onBackToMenu || handleRetake}
+            autoNextCaptureSignal={autoSignal}
+          />
+        </div>
+        {/* Strip Preview */}
+        <div className="w-full md:w-1/2 flex flex-col items-center">
+          {renderPhotoStrip()}
+        </div>
+      </div>
     </div>
   );
 };
