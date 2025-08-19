@@ -21,6 +21,8 @@ import {
   FILTERS,
 } from '../constants';
 import { generateImageWithCanvas } from '../utils/imageUtils';
+import PhotoFrameTemplateSelector from './PhotoFrameTemplateSelector';
+import { PHOTO_FRAME_TEMPLATES, PhotoFrameTemplate } from './PhotoFrameTemplates';
 import { Button } from './Button';
 import { Spinner } from './Spinner';
 import { boomerangFramesToWebM } from '../utils/boomerangToWebm';
@@ -33,7 +35,14 @@ import { extractFramesFromVideoBlob } from '../utils/imageUtils';
 
 const PhotoboothApp: React.FC = () => {
   // --- All state, handlers, and logic from App.tsx (photobooth part) go here ---
-  const [currentView, setCurrentView] = useState<ViewState>('LANDING');
+  const [currentView, _setCurrentView] = useState<ViewState>('LANDING');
+  const setCurrentView = (view: ViewState) => {
+    _setCurrentView(view);
+  };
+
+  useEffect(() => {
+    console.log('[PhotoboothApp] currentView:', currentView);
+  }, [currentView]);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [editedImage, setEditedImage] = useState<string | null>(null);
   const [pinUnlocked, setPinUnlocked] = useState(() => localStorage.getItem('photoboothPin') === '1');
@@ -51,6 +60,7 @@ const PhotoboothApp: React.FC = () => {
   const [qrFgColor, setQrFgColor] = useState('#000000');
   const [qrBgColor, setQrBgColor] = useState('#FFFFFF');
   const [photoType, setPhotoType] = useState<'normal' | 'chroma'>('normal');
+  const [frameTemplate, setFrameTemplate] = useState<PhotoFrameTemplate | null>(PHOTO_FRAME_TEMPLATES[0]);
   const photoEditorRef = useRef<{ generateFinalImage: () => Promise<string | null> }>(null);
 
   const clearModal = useCallback(() => {
@@ -87,11 +97,15 @@ const PhotoboothApp: React.FC = () => {
     setRecordedSlowMoVideoUrl(null);
     setPhotoType('normal');
     clearModal();
-    const actionableViews: ViewState[] = ['CAMERA', 'BOOMERANG_CAPTURE', 'VIDEO_CAPTURE', 'SLOWMO_CAPTURE', 'PHOTO_STRIP', 'CHROMA_PHOTO'];
-    if (actionableViews.includes(selectedView)) {
-      setCurrentView(selectedView);
+    if (selectedView === 'CAMERA' || selectedView === 'PHOTO_FRAME_SELECTOR') {
+      setCurrentView('PHOTO_FRAME_SELECTOR');
     } else {
-      setCurrentView('MENU');
+      const actionableViews: ViewState[] = ['BOOMERANG_CAPTURE', 'VIDEO_CAPTURE', 'SLOWMO_CAPTURE', 'PHOTO_STRIP', 'CHROMA_PHOTO'];
+      if (actionableViews.includes(selectedView)) {
+        setCurrentView(selectedView);
+      } else {
+        setCurrentView('MENU');
+      }
     }
   }, [clearModal]);
 
@@ -99,6 +113,13 @@ const PhotoboothApp: React.FC = () => {
     setCurrentView('MENU');
     clearModal();
   }, [clearModal]);
+
+  // Handle frame template selection
+  const handleFrameTemplateSelect = useCallback((template: PhotoFrameTemplate) => {
+    console.log('[PhotoboothApp] handleFrameTemplateSelect called with:', template);
+    setFrameTemplate(template);
+    setCurrentView('CAMERA');
+  }, []);
 
   const handlePhotoCaptured = useCallback((imageDataUrl: string) => {
     setCapturedImage(imageDataUrl);
@@ -216,8 +237,11 @@ const PhotoboothApp: React.FC = () => {
       setModalContent({ type: 'loading', message: "Generating final photo..." });
       try {
         const finalImage = await photoEditorRef.current.generateFinalImage();
+        console.log('[handleSavePhoto] final composited image data URL:', finalImage);
         if (finalImage) {
           setEditedImage(finalImage);
+          // Optionally, show a preview modal for debugging
+          // setModalContent({ type: 'preview', image: finalImage });
           setModalContent({ type: 'loading', message: "Uploading photo to cloud..." });
           const qrLink = await uploadToServer(finalImage);
           setModalContent({
@@ -481,13 +505,13 @@ const PhotoboothApp: React.FC = () => {
   }, [currentView, recordedSlowMoVideoUrl]);
 
   useEffect(() => {
-    const validViews: ViewState[] = [
-        'LANDING', 'MENU', 'CAMERA', 'EDITOR', 'PRINTING', 
-        'BOOMERANG_CAPTURE', 'BOOMERANG_PREVIEW', 
-        'VIDEO_CAPTURE', 'VIDEO_PREVIEW',
-        'SLOWMO_CAPTURE', 'SLOWMO_PREVIEW',
-        'PHOTO_STRIP', 'CHROMA_PHOTO'
-    ];
+  const validViews: ViewState[] = [
+    'LANDING', 'MENU', 'PHOTO_FRAME_SELECTOR', 'CAMERA', 'EDITOR', 'PRINTING', 
+    'BOOMERANG_CAPTURE', 'BOOMERANG_PREVIEW', 
+    'VIDEO_CAPTURE', 'VIDEO_PREVIEW',
+    'SLOWMO_CAPTURE', 'SLOWMO_PREVIEW',
+    'PHOTO_STRIP', 'CHROMA_PHOTO'
+  ];
     if (!validViews.includes(currentView)) {
       setCurrentView('MENU');
     }
@@ -503,6 +527,8 @@ const PhotoboothApp: React.FC = () => {
         return <LandingPage onComplete={handleLandingComplete} />;
       case 'MENU':
         return <MenuPage onSelectView={handleMenuSelection} />;
+      case 'PHOTO_FRAME_SELECTOR':
+        return <PhotoFrameTemplateSelector onTemplateSelect={handleFrameTemplateSelect} onBackToMenu={handleBackToMenu} />;
       case 'CAMERA':
         return <CameraView onPhotoCaptured={handlePhotoCaptured} onBackToMenu={handleBackToMenu} />;
       case 'EDITOR':
@@ -541,6 +567,7 @@ const PhotoboothApp: React.FC = () => {
             onSave={handleSavePhoto}
             onPrint={handlePrintPhoto}
             onBackToMenu={handleBackToMenu}
+            selectedFrameTemplate={frameTemplate}
           />
         );
       case 'PRINTING':

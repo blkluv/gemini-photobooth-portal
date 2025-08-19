@@ -57,10 +57,10 @@ export const MenuPage: React.FC<MenuPageProps> = ({ onSelectView }) => {
   }> = [
     {
       id: 'snap-photo',
-      icon: <CameraIcon className="w-12 h-12 sm:w-16 sm:h-16" />,
+      icon: <CameraIcon className="w-12 h-12 sm:w-16 sm:h-16" />, 
       title: 'Snap Photo',
       description: 'Capture a still photo and edit with fun stickers & filters.',
-      view: 'CAMERA',
+      view: 'PHOTO_FRAME_SELECTOR',
       category: 'PHOTO',
     },
     {
@@ -148,7 +148,12 @@ export const MenuPage: React.FC<MenuPageProps> = ({ onSelectView }) => {
             icon={item.icon}
             title={item.title}
             description={item.description}
-            onClick={() => onSelectView(item.view)}
+            onClick={() => {
+              if (item.id === 'snap-photo') {
+                console.log('Snap Photo clicked, view:', item.view);
+              }
+              onSelectView(item.view);
+            }}
           />
         ))}
       </div>

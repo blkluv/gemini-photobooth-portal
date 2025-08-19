@@ -24,12 +24,13 @@ export interface Point {
   y: number;
 }
 
-export type ViewState = 
-  | 'LANDING' 
-  | 'MENU' 
-  | 'CAMERA' 
-  | 'EDITOR' 
-  | 'PRINTING' 
+export type ViewState =
+  | 'LANDING'
+  | 'MENU'
+  | 'PHOTO_FRAME_SELECTOR'
+  | 'CAMERA'
+  | 'EDITOR'
+  | 'PRINTING'
   | 'BOOMERANG_CAPTURE'
   | 'BOOMERANG_PREVIEW'
   | 'VIDEO_CAPTURE'

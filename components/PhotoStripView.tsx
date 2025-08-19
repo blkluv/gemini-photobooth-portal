@@ -159,26 +159,97 @@ const PhotoStripView: React.FC<PhotoStripViewProps> = ({ onBackToMenu, onSave })
   };
 
   return (
-    <div className="w-full h-full flex flex-col items-center bg-slate-800 p-6">
-      <div className="w-full flex justify-center items-center mb-6">
-        <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">Photo Strip</h1>
+    <div className="w-full h-full flex flex-col bg-slate-800 relative">
+      {/* Header */}
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20 bg-black bg-opacity-50 backdrop-blur-sm px-6 py-2 rounded-lg">
+        <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">Photo Strip</h1>
+        <p className="text-white text-sm text-center">Step {currentStep} of {selectedTemplate?.photoCount || 3}</p>
       </div>
+      
       <canvas ref={canvasRef} style={{ display: 'none' }} />
-      <h2 className="text-xl font-semibold text-white mb-4">Step {currentStep} of {selectedTemplate?.photoCount || 3}</h2>
-      <div className="w-full flex flex-col md:flex-row gap-8 items-start justify-center">
-        {/* Camera View */}
-        <div className="w-full md:w-1/2 flex flex-col items-center">
-          <CameraView 
-            onPhotoCaptured={handlePhotoCaptured}
-            onBackToMenu={onBackToMenu || handleRetake}
-            autoNextCaptureSignal={autoSignal}
-          />
-        </div>
-        {/* Strip Preview */}
-        <div className="w-full md:w-1/2 flex flex-col items-center">
-          {renderPhotoStrip()}
-        </div>
+      
+      {/* Camera View - Full screen */}
+      <div className="w-full h-full relative">
+        <CameraView 
+          onPhotoCaptured={handlePhotoCaptured}
+          onBackToMenu={onBackToMenu || handleRetake}
+          autoNextCaptureSignal={autoSignal}
+          isFirstCapture={currentStep === 1}
+        />
       </div>
+      
+      {/* Vertical Template Preview - Right Side Overlay (for 3-4 image vertical templates) */}
+      {selectedTemplate?.layout === 'vertical' && selectedTemplate?.photoCount >= 3 && (
+        <div className="absolute top-1/2 right-4 transform -translate-y-1/2 z-10 pointer-events-none">
+          <div className="bg-white bg-opacity-20 backdrop-blur-sm border-2 border-white border-opacity-50 rounded-lg p-3 shadow-lg">
+            <div className="grid grid-rows-4 gap-2">
+              {Array.from({ length: selectedTemplate?.photoCount || 3 }, (_, idx) => (
+                <div key={idx} className="relative w-20 h-24">
+                  <div className={`w-full h-full border-2 border-white border-opacity-70 rounded-md bg-black bg-opacity-30 flex items-center justify-center ${
+                    idx < photos.length ? 'border-green-400' : 'border-dashed'
+                  }`}>
+                    {idx < photos.length ? (
+                      <img 
+                        src={photos[idx]} 
+                        alt={`Photo ${idx + 1}`} 
+                        className="w-full h-full object-cover rounded-md"
+                      />
+                    ) : (
+                      <span className="text-white text-opacity-80 font-semibold text-sm">
+                        {idx + 1}
+                      </span>
+                    )}
+                  </div>
+                  {idx + 1 === currentStep && (
+                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
+                      <span className="text-white font-bold text-xs">{currentStep}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Landscape Template Preview - Above Snap Button (for all landscape templates) */}
+      {selectedTemplate?.layout === 'landscape' && (
+        <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-10 pointer-events-none">
+          <div className="bg-white bg-opacity-20 backdrop-blur-sm border-2 border-white border-opacity-50 rounded-lg p-3 shadow-lg">
+            <div className="grid grid-cols-4 gap-2">
+              {Array.from({ length: selectedTemplate?.photoCount || 3 }, (_, idx) => (
+                <div key={idx} className="relative w-16 h-16">
+                  <div className={`w-full h-full border-2 border-white border-opacity-70 rounded-md bg-black bg-opacity-30 flex items-center justify-center ${
+                    idx < photos.length ? 'border-green-400' : 'border-dashed'
+                  }`}>
+                    {idx < photos.length ? (
+                      <img 
+                        src={photos[idx]} 
+                        alt={`Photo ${idx + 1}`} 
+                        className="w-full h-full object-cover rounded-md"
+                      />
+                    ) : (
+                      <span className="text-white text-opacity-80 font-semibold text-sm">
+                        {idx + 1}
+                      </span>
+                    )}
+                  </div>
+                  {idx + 1 === currentStep && (
+                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
+                      <span className="text-white font-bold text-xs">{currentStep}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 backdrop-blur-sm px-3 py-1 rounded-lg">
+            <p className="text-white text-xs text-center">
+              Position yourself in the highlighted area
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
