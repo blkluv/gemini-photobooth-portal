@@ -7,7 +7,10 @@ export const generateImageWithCanvas = (
   filterStyle: string,
   frameImageSrc?: string | null,
   drawingOverlaySrc?: string | null,
-  frameOverlayStyle?: React.CSSProperties | null
+  frameOverlayStyle?: React.CSSProperties | null,
+  frameType?: string,
+  caption?: string,
+  swatches?: string[]
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas');
@@ -22,11 +25,109 @@ export const generateImageWithCanvas = (
     const baseImage = new Image();
     baseImage.crossOrigin = "anonymous"; // Handle potential CORS issues if images are from different origins
     baseImage.onload = () => {
+      // Special handling for polaroid frame
+      if (frameType === 'polaroid') {
+        // Draw polaroid background (taller canvas)
+        ctx.save();
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, PHOTO_WIDTH, PHOTO_HEIGHT * 1.18);
+        ctx.strokeStyle = '#ddd';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(0, 0, PHOTO_WIDTH, PHOTO_HEIGHT * 1.18);
+        ctx.restore();
+
+        // Draw photo area (inset)
+        const photoW = PHOTO_WIDTH * 0.82;
+        const photoH = PHOTO_HEIGHT * 0.75;
+        const photoX = (PHOTO_WIDTH - photoW) / 2;
+        const photoY = PHOTO_HEIGHT * 0.08;
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(photoX, photoY, photoW, photoH, 16);
+        ctx.clip();
+        ctx.filter = filterStyle || 'none';
+        ctx.drawImage(baseImage, photoX, photoY, photoW, photoH);
+        ctx.filter = 'none';
+        ctx.restore();
+
+        // Draw drawing overlay (if any)
+        if (drawingOverlaySrc) {
+          const overlayImg = new Image();
+          overlayImg.onload = () => {
+            ctx.drawImage(overlayImg, photoX, photoY, photoW, photoH);
+            drawStickersPolaroid();
+          };
+          overlayImg.onerror = () => drawStickersPolaroid();
+          overlayImg.src = drawingOverlaySrc;
+        } else {
+          drawStickersPolaroid();
+        }
+
+        function drawStickersPolaroid() {
+          // Draw stickers (positioned relative to photo area)
+          const stickerPromises = stickers.map(sticker => {
+            return new Promise<void>((resolveSticker, rejectSticker) => {
+              const stickerImg = new Image();
+              stickerImg.crossOrigin = "anonymous";
+              stickerImg.onload = () => {
+                // Map sticker.x/y from full canvas to photo area
+                const relX = photoX + (sticker.x ?? 0) * (photoW / PHOTO_WIDTH);
+                const relY = photoY + (sticker.y ?? 0) * (photoH / PHOTO_HEIGHT);
+                const scale = sticker.scale ?? 0.5;
+                const width = sticker.width * scale * (photoW / PHOTO_WIDTH);
+                const height = sticker.height * scale * (photoH / PHOTO_HEIGHT);
+                ctx.drawImage(stickerImg, relX, relY, width, height);
+                resolveSticker();
+              };
+              stickerImg.onerror = () => resolveSticker();
+              stickerImg.src = sticker.src;
+            });
+          });
+          Promise.all(stickerPromises).then(() => {
+            // Draw caption
+            if (caption) {
+              ctx.save();
+              ctx.font = `bold ${Math.max(32, Math.floor(PHOTO_HEIGHT * 0.06))}px 'Comic Sans MS', 'Comic Sans', cursive`;
+              ctx.fillStyle = '#222';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.shadowColor = '#fff';
+              ctx.shadowBlur = 2;
+              ctx.fillText(caption, PHOTO_WIDTH / 2, PHOTO_HEIGHT * 0.92, PHOTO_WIDTH * 0.8);
+              ctx.restore();
+            }
+            // Draw swatches
+            if (swatches && swatches.length > 0) {
+              const swatchY = PHOTO_HEIGHT * 1.04;
+              const swatchRadius = 18;
+              const gap = 16;
+              const totalWidth = swatches.length * swatchRadius * 2 + (swatches.length - 1) * gap;
+              let startX = (PHOTO_WIDTH - totalWidth) / 2 + swatchRadius;
+              swatches.forEach((color) => {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(startX, swatchY, swatchRadius, 0, 2 * Math.PI);
+                ctx.fillStyle = color;
+                ctx.fill();
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#eee';
+                ctx.stroke();
+                ctx.restore();
+                startX += swatchRadius * 2 + gap;
+              });
+            }
+            // Done
+            resolve(canvas.toDataURL('image/jpeg', 0.8));
+          });
+        }
+        return;
+      }
+      // --- END POLAROID ---
+
       // Apply filter
       if (filterStyle) {
         ctx.filter = filterStyle;
       }
-      
       // Draw frame overlay if present (bottom layer)
       const drawFrame = () => {
         return new Promise<void>((resolveFrame, rejectFrame) => {

@@ -69,18 +69,31 @@ This document summarizes the PHP backend scripts and their roles in the project.
 - Debug mode for development
 - Graceful fallbacks for failed operations
 
+
 ## Integration with Frontend
+
+### Print API (DSLR Backend)
+
+- The frontend sends print jobs to `http://localhost:3000/api/print`.
+- Print jobs require an `X-DSLR-Token` header for authentication.
+- The image is sent as a base64 string in the `imageBase64` field.
+- The print size is sent as `printSize` (4R, 5R, 6R, A4).
+- The backend validates the token and processes the print job.
+
+### Example Print Request
+```json
+{
+  "imageBase64": "data:image/png;base64,...",
+  "printSize": "4R"
+}
+```
 
 ### Response Format
 ```json
 {
   "success": true,
-  "data": {
-    "filename": "uploaded_file.jpg",
-    "qr_code": "data:image/png;base64,...",
-    "url": "https://example.com/view/abc123"
-  },
-  "message": "Upload successful"
+  "message": "Print job accepted",
+  "jobId": "print_12345"
 }
 ```
 
@@ -88,9 +101,8 @@ This document summarizes the PHP backend scripts and their roles in the project.
 ```json
 {
   "success": false,
-  "error": "Invalid file type",
-  "code": "INVALID_FILE_TYPE",
-  "details": "Only JPG, PNG, and MP4 files are allowed"
+  "error": "Invalid token or request",
+  "code": "AUTH_ERROR|INVALID_REQUEST|PRINT_ERROR"
 }
 ```
 

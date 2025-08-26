@@ -151,19 +151,32 @@ After capturing any media, you can edit it using the Photo Editor:
 - **Save to Device**: Save the file to your device
 - **Share**: Share the file directly
 
+
 ## Printing
+
+### How to Print
+1. After editing your photo, click the **Print** button in the Photo Editor.
+2. A dialog will appear **above the print button** allowing you to select the print size (4R, 5R, 6R, A4).
+3. Choose your desired print size and confirm.
+4. The system will automatically send your photo to the backend printer.
+5. If authentication is required, the system will use your session token.
+6. You will see a confirmation or error message after the print job is sent.
 
 ### Print Options
 - **Single Photo**: Print individual photos
 - **Photo Strip**: Print classic photo strips
-- **Multiple Copies**: Print multiple copies
-- **Custom Sizes**: Choose from available print sizes
+- **Print Size Selection**: Choose from 4R, 5R, 6R, or A4 before printing
 
-### Print Settings
-- **Paper Size**: Select paper size (4x6, 5x7, etc.)
-- **Quality**: Choose print quality
-- **Copies**: Select number of copies
-- **Layout**: Choose print layout
+### Print Settings (Backend)
+- **Paper Size**: Sent to backend as `printSize` (4R, 5R, 6R, A4)
+- **Authentication**: Print jobs require a valid token (handled automatically)
+
+### Troubleshooting Print Issues
+- **Authentication Error**: Ensure you are logged in and have a valid session
+- **Print Size Not Available**: Only supported sizes will be shown
+- **Printer Offline**: Contact your administrator
+
+---
 
 ## Troubleshooting
 

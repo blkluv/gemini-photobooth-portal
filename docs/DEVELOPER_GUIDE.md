@@ -128,33 +128,45 @@ PhotoboothApp
 - **Service Layer**: Handle API calls and business logic
 - **Custom Hooks**: Extract reusable logic
 
-#### Service Layer Pattern
-```typescript
-// services/apiService.ts
-class ApiService {
-  private baseUrl: string;
-  
-  constructor() {
-    this.baseUrl = process.env.REACT_APP_API_URL;
-  }
-  
-  async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
-      ...options,
-    });
-    
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
-    }
-    
-    return response.json();
-  }
+
+### Print API Integration (DSLR Backend)
+
+#### Endpoint
+```http
+POST /api/print
+Host: http://localhost:3000
+Content-Type: application/json
+X-DSLR-Token: <your-auth-token>
+```
+
+#### Request Body
+```json
+{
+  "imageBase64": "data:image/png;base64,...",
+  "printSize": "4R" // or "5R", "6R", "A4"
 }
 ```
+
+#### Example (TypeScript)
+```typescript
+await fetch('http://localhost:3000/api/print', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-DSLR-Token': token,
+  },
+  body: JSON.stringify({
+    imageBase64: compositedImage,
+    printSize: selectedSize,
+  }),
+});
+```
+
+#### Notes
+- The frontend must send the composited image as a base64 string.
+- The print size is selected by the user and sent as `printSize`.
+- The `X-DSLR-Token` header is required for authentication.
+- See PrintView.tsx for implementation details.
 
 ### Backend Architecture
 

@@ -50,11 +50,19 @@ export const PhotoEditor = forwardRef<PhotoEditorRef, PhotoEditorProps>(({
   const [isGeneratingSticker, setIsGeneratingSticker] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showFloatingMenu, setShowFloatingMenu] = useState(false);
-  const [activeMenu, setActiveMenu] = useState<'filters' | 'stickers' | 'ai' | null>(null);
+  const [activeMenu, setActiveMenu] = useState<'filters' | 'stickers' | 'ai' | 'caption' | null>(null);
+  const selectedFrame = selectedFrameTemplate || PHOTO_FRAME_TEMPLATES[0];
+  // Editable caption state for polaroid
+  const [editableCaption, setEditableCaption] = useState(selectedFrame?.caption || '');
   const [screenSize, setScreenSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   // Frame overlay state
   const [frameImage, setFrameImage] = useState<string | null>(null); // for upload (deprecated by template)
-  const selectedFrame = selectedFrameTemplate || PHOTO_FRAME_TEMPLATES[0];
+  // Keep editableCaption in sync with selectedFrame
+  useEffect(() => {
+    if (selectedFrame?.type === 'polaroid') {
+      setEditableCaption(selectedFrame.caption || '');
+    }
+  }, [selectedFrame]);
 
   // Drawing state
   const [isDrawing, setIsDrawing] = useState(false);
@@ -120,7 +128,10 @@ export const PhotoEditor = forwardRef<PhotoEditorRef, PhotoEditorProps>(({
         activeFilter.style,
         selectedFrame?.frameSrc,
         drawingDataUrl,
-        selectedFrame?.overlay || null
+        selectedFrame?.overlay || null,
+        selectedFrame?.type,
+        selectedFrame?.caption,
+        selectedFrame?.swatches
       );
     }
   }), [baseImage, appliedStickers, activeFilter.style, selectedFrame, drawPaths]);
@@ -322,7 +333,7 @@ export const PhotoEditor = forwardRef<PhotoEditorRef, PhotoEditorProps>(({
     }
   };
 
-  const openMenu = (menu: 'filters' | 'stickers' | 'ai') => {
+  const openMenu = (menu: 'filters' | 'stickers' | 'ai' | 'caption') => {
     setActiveMenu(activeMenu === menu ? null : menu);
   };
 
@@ -338,72 +349,200 @@ export const PhotoEditor = forwardRef<PhotoEditorRef, PhotoEditorProps>(({
 
       {/* Full Screen Photo Preview */}
       <div className="w-full h-full flex items-center justify-center">
-        <div
-          ref={photoAreaRef}
-          className="relative bg-black overflow-hidden select-none touch-none"
-          style={{ 
-            width: photoSize.width, 
-            height: photoSize.height,
-            maxWidth: '95vw',
-            maxHeight: '95vh'
-          }}
-          onDragOver={handlePhotoAreaDragOver}
-          onDrop={handlePhotoAreaDrop}
-        >
-          {/* User photo */}
-          <img
-            src={baseImage}
-            alt="Captured"
-            className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-            style={{ filter: activeFilter.style, zIndex: 2 }}
-          />
-          {/* Frame template (in front of photo) */}
-          {selectedFrame && (
+        {selectedFrame?.type === 'polaroid' ? (
+          <div
+            className="relative flex flex-col items-center justify-center bg-transparent"
+            style={{
+              width: photoSize.width,
+              height: photoSize.height + photoSize.height * 0.18,
+              maxWidth: '95vw',
+              maxHeight: '95vh',
+            }}
+          >
+            {/* Polaroid frame */}
             <div
-              className="absolute inset-0 w-full h-full pointer-events-none"
-              style={{ zIndex: 4, ...selectedFrame.overlay }}
-            />
-          )}
-          {/* Drawing canvas (above photo) */}
-          <canvas
-            ref={drawCanvasRef}
-            width={PHOTO_WIDTH}
-            height={PHOTO_HEIGHT}
-            className="absolute inset-0 w-full h-full pointer-events-auto"
-            style={{ zIndex: 3 }}
-            onPointerDown={handleDrawStart}
-            onPointerMove={handleDrawMove}
-            onPointerUp={handleDrawEnd}
-            onPointerLeave={handleDrawEnd}
-          />
-          {/* Stickers */}
-          {appliedStickers.map((sticker) => (
-            <img
-              key={sticker.id}
-              src={sticker.src}
-              alt={sticker.alt}
-              draggable 
-              onDragStart={(e) => handleStickerDragStart(e, sticker)}
-              onDrag={(e) => handleStickerDrag(e)} 
-              onDragEnd={handleStickerDragEnd}
-              className="absolute cursor-grab active:cursor-grabbing"
+              className="absolute left-0 top-0 w-full"
               style={{
-                left: `${sticker.x ?? 0}px`,
-                top: `${sticker.y ?? 0}px`,
-                width: `${sticker.width * (sticker.scale ?? 0.5)}px`,
-                height: `${sticker.height * (sticker.scale ?? 0.5)}px`,
-                zIndex: sticker.zIndex ?? 4,
-                touchAction: 'none', 
-              }}
-              onClick={(e) => { 
-                e.stopPropagation(); 
-                if (window.confirm("Remove this sticker?")) {
-                  removeSticker(sticker.id);
-                }
+                height: photoSize.height + photoSize.height * 0.18,
+                background: '#fff',
+                border: '2px solid #ddd',
+                borderRadius: 16,
+                boxShadow: '0 4px 24px rgba(0,0,0,0.18)',
+                zIndex: 1,
               }}
             />
-          ))}
-        </div>
+            {/* Photo area */}
+            <div
+              className="absolute left-1/2 top-8 transform -translate-x-1/2"
+              style={{
+                width: photoSize.width * 0.82,
+                height: photoSize.height * 0.75,
+                background: '#eee',
+                borderRadius: 8,
+                overflow: 'hidden',
+                zIndex: 2,
+              }}
+            >
+              <img
+                src={baseImage}
+                alt="Captured"
+                className="w-full h-full object-contain pointer-events-none"
+                style={{ filter: activeFilter.style }}
+              />
+              {/* Drawing canvas (above photo) */}
+              <canvas
+                ref={drawCanvasRef}
+                width={PHOTO_WIDTH}
+                height={PHOTO_HEIGHT}
+                className="absolute inset-0 w-full h-full pointer-events-auto"
+                style={{ zIndex: 3, left: 0, top: 0 }}
+                onPointerDown={handleDrawStart}
+                onPointerMove={handleDrawMove}
+                onPointerUp={handleDrawEnd}
+                onPointerLeave={handleDrawEnd}
+              />
+              {/* Stickers */}
+              {appliedStickers.map((sticker) => (
+                <img
+                  key={sticker.id}
+                  src={sticker.src}
+                  alt={sticker.alt}
+                  draggable
+                  onDragStart={(e) => handleStickerDragStart(e, sticker)}
+                  onDrag={(e) => handleStickerDrag(e)}
+                  onDragEnd={handleStickerDragEnd}
+                  className="absolute cursor-grab active:cursor-grabbing"
+                  style={{
+                    left: `${sticker.x ?? 0}px`,
+                    top: `${sticker.y ?? 0}px`,
+                    width: `${sticker.width * (sticker.scale ?? 0.5)}px`,
+                    height: `${sticker.height * (sticker.scale ?? 0.5)}px`,
+                    zIndex: sticker.zIndex ?? 4,
+                    touchAction: 'none',
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm("Remove this sticker?")) {
+                      removeSticker(sticker.id);
+                    }
+                  }}
+                />
+              ))}
+            </div>
+            {/* Caption */}
+            {selectedFrame.caption && (
+              <div
+                className="absolute left-1/2"
+                style={{
+                  bottom: photoSize.height * 0.08,
+                  transform: 'translateX(-50%)',
+                  fontFamily: 'Comic Sans MS, Comic Sans, cursive',
+                  fontWeight: 'bold',
+                  fontSize: Math.max(18, photoSize.height * 0.06),
+                  color: '#222',
+                  textAlign: 'center',
+                  zIndex: 3,
+                  width: photoSize.width * 0.8,
+                  whiteSpace: 'pre-line',
+                }}
+              >
+                {selectedFrame.caption}
+              </div>
+            )}
+            {/* Swatches */}
+            {selectedFrame.swatches && selectedFrame.swatches.length > 0 && (
+              <div
+                className="absolute left-1/2 flex gap-2"
+                style={{
+                  bottom: photoSize.height * 0.02,
+                  transform: 'translateX(-50%)',
+                  zIndex: 3,
+                }}
+              >
+                {selectedFrame.swatches.map((color, idx) => (
+                  <span
+                    key={color + idx}
+                    style={{
+                      display: 'inline-block',
+                      width: 24,
+                      height: 24,
+                      borderRadius: '50%',
+                      background: color,
+                      border: '2px solid #eee',
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div
+            ref={photoAreaRef}
+            className="relative bg-black overflow-hidden select-none touch-none"
+            style={{
+              width: photoSize.width,
+              height: photoSize.height,
+              maxWidth: '95vw',
+              maxHeight: '95vh',
+            }}
+            onDragOver={handlePhotoAreaDragOver}
+            onDrop={handlePhotoAreaDrop}
+          >
+            {/* User photo */}
+            <img
+              src={baseImage}
+              alt="Captured"
+              className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+              style={{ filter: activeFilter.style, zIndex: 2 }}
+            />
+            {/* Frame template (in front of photo) */}
+            {selectedFrame && (
+              <div
+                className="absolute inset-0 w-full h-full pointer-events-none"
+                style={{ zIndex: 4, ...selectedFrame.overlay }}
+              />
+            )}
+            {/* Drawing canvas (above photo) */}
+            <canvas
+              ref={drawCanvasRef}
+              width={PHOTO_WIDTH}
+              height={PHOTO_HEIGHT}
+              className="absolute inset-0 w-full h-full pointer-events-auto"
+              style={{ zIndex: 3 }}
+              onPointerDown={handleDrawStart}
+              onPointerMove={handleDrawMove}
+              onPointerUp={handleDrawEnd}
+              onPointerLeave={handleDrawEnd}
+            />
+            {/* Stickers */}
+            {appliedStickers.map((sticker) => (
+              <img
+                key={sticker.id}
+                src={sticker.src}
+                alt={sticker.alt}
+                draggable
+                onDragStart={(e) => handleStickerDragStart(e, sticker)}
+                onDrag={(e) => handleStickerDrag(e)}
+                onDragEnd={handleStickerDragEnd}
+                className="absolute cursor-grab active:cursor-grabbing"
+                style={{
+                  left: `${sticker.x ?? 0}px`,
+                  top: `${sticker.y ?? 0}px`,
+                  width: `${sticker.width * (sticker.scale ?? 0.5)}px`,
+                  height: `${sticker.height * (sticker.scale ?? 0.5)}px`,
+                  zIndex: sticker.zIndex ?? 4,
+                  touchAction: 'none',
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (window.confirm("Remove this sticker?")) {
+                    removeSticker(sticker.id);
+                  }
+                }}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Floating Action Button */}
@@ -453,6 +592,20 @@ export const PhotoEditor = forwardRef<PhotoEditorRef, PhotoEditorProps>(({
               >
                 <SparklesIcon className="w-6 h-6" />
               </Button>
+
+              {/* Caption Edit Button (only for polaroid) */}
+              {selectedFrame?.type === 'polaroid' && (
+                <Button
+                  onClick={() => openMenu('caption')}
+                  variant="secondary"
+                  className={`w-12 h-12 rounded-full shadow-lg transition-all duration-300 ${
+                    activeMenu === 'caption' ? 'bg-purple-600 text-white' : 'bg-white bg-opacity-20 backdrop-blur-sm text-white'
+                  }`}
+                  aria-label="Edit Caption"
+                >
+                  <span className="text-lg font-bold">T</span>
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -506,6 +659,31 @@ export const PhotoEditor = forwardRef<PhotoEditorRef, PhotoEditorProps>(({
                     <SparklesIcon className="w-5 h-5 mr-2" />
                   )}
                   {isGeneratingSticker ? 'Generating...' : 'Create Sticker'}
+                </Button>
+              </div>
+            )}
+
+            {activeMenu === 'caption' && selectedFrame?.type === 'polaroid' && (
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-3">Edit Caption</h3>
+                <input
+                  type="text"
+                  value={editableCaption}
+                  onChange={(e) => setEditableCaption(e.target.value)}
+                  placeholder="Enter caption..."
+                  className="w-full p-2 rounded bg-slate-600 text-white border border-slate-500 focus:ring-purple-500 focus:border-purple-500 mb-2 text-sm"
+                  maxLength={60}
+                />
+                <Button
+                  onClick={() => {
+                    // Update the selectedFrame.caption (mutate for preview only)
+                    if (selectedFrame) selectedFrame.caption = editableCaption;
+                    setActiveMenu(null);
+                  }}
+                  variant="primary"
+                  className="w-full"
+                >
+                  Save Caption
                 </Button>
               </div>
             )}

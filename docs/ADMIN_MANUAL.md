@@ -131,19 +131,25 @@ Trial keys provide temporary access for testing or short-term use.
 - **Firmware Updates**: Keep camera firmware current
 - **Cleaning Schedule**: Regular lens and sensor cleaning
 
+
 ## Printer Management
+
+### Print API Integration
+- The frontend now sends print jobs directly to the backend at `http://localhost:3000/api/print`.
+- Print jobs require an `X-DSLR-Token` header for authentication.
+- The print size is selected by the user in the frontend and sent as `printSize` (4R, 5R, 6R, A4).
+- The image is sent as a base64 string in the `imageBase64` field.
+- Print jobs are processed automatically when the user confirms print.
 
 ### Printer Setup
 1. **Connect Printer**: Ensure printer is properly connected
 2. **Install Drivers**: Install necessary printer drivers
-3. **Configure Settings**: Set paper size, quality, and layout
+3. **Configure Backend**: Ensure backend is running and token authentication is enabled
 4. **Test Prints**: Perform test prints to verify setup
 
 ### Print Settings
-- **Paper Size**: Configure available paper sizes
-- **Print Quality**: Set resolution and quality settings
-- **Layout Options**: Configure print layouts
-- **Color Management**: Ensure accurate color reproduction
+- **Paper Size**: User selects from available sizes in frontend; backend receives as `printSize`
+- **Authentication**: All print jobs require a valid token
 
 ### Printer Maintenance
 - **Paper Management**: Monitor paper levels

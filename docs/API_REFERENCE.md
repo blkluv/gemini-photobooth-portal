@@ -7,6 +7,56 @@ This document provides a comprehensive reference for all API endpoints in the Ge
 - **PHP Backend**: `http://localhost/api/` (or your server URL)
 - **DSLR Backend**: `http://localhost:3000/api/` (see [DSLR Integration](DSLR_INTEGRATION.md))
 
+
+## Print API (DSLR Backend)
+
+### Print Photo
+
+**Endpoint:**
+```http
+POST /api/print
+Host: http://localhost:3000
+Content-Type: application/json
+X-DSLR-Token: <your-auth-token>
+```
+
+**Request Body:**
+```json
+{
+  "imageBase64": "data:image/png;base64,...", // composited image as base64 string
+  "printSize": "4R" // or "5R", "6R", "A4"
+}
+```
+
+**Headers:**
+- `X-DSLR-Token`: Required. Your authentication token for backend access.
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Print job accepted",
+  "jobId": "print_12345"
+}
+```
+
+**Error Response:**
+```json
+{
+  "success": false,
+  "error": "Invalid token or request",
+  "code": "AUTH_ERROR|INVALID_REQUEST|PRINT_ERROR"
+}
+```
+
+**Notes:**
+- The frontend must send the composited image as a base64 string in the `imageBase64` field.
+- The `printSize` field must be one of the supported sizes (e.g., "4R", "5R", "6R", "A4").
+- The `X-DSLR-Token` header is required for authentication.
+- See the user manual for print workflow and size selection UI.
+
+---
+
 ## PHP Backend API
 
 ### Authentication
