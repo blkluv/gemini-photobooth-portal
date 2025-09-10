@@ -24,7 +24,7 @@ const CLIENT_LOGOS = [
 ];
 const TESTIMONIALS = [
   {
-    quote: 'SnapBooth made our company gala unforgettable. Guests loved the instant prints & boomerang videos!',
+    quote: 'LumeeBooth made our company gala unforgettable. Guests loved the instant prints & boomerang videos!',
     author: 'Jane, Event Planner',
   },
   {
@@ -124,8 +124,8 @@ const HeroSection = () => (
     <img src={HERO_IMAGE} alt="SnapBooth Hero" className="relative z-10 object-cover w-full h-64 max-w-2xl mx-auto mb-8 shadow-lg rounded-xl" />
     {/* Optionally, add a blurred background image */}
     {/* <img src={BG_IMAGE_1} alt="Background" className="absolute inset-0 z-0 object-cover w-full h-full opacity-20" /> */}
-    <h1 className="z-10 mb-4 text-4xl font-extrabold text-gray-800 md:text-5xl dark:text-white">SnapBooth – Capture the Moment, Share the Joy</h1>
-    <p className="z-10 mb-8 text-lg text-gray-600 dark:text-gray-300">Portable photo & video booths for weddings, corporate, birthdays—with instant prints, GIFs, 360 & more!</p>
+    <h1 className="z-10 mb-4 text-4xl font-extrabold text-gray-800 md:text-5xl dark:text-white">LumeeBooth – Capture the Moment, Share the Joy</h1>
+    <p className="z-10 mb-8 text-lg text-gray-600 dark:text-gray-300">Photo & video booths for weddings, corporate, birthdays—with instant prints, GIFs, 360 & more!</p>
     <a href="#contact" className="z-10 px-8 py-4 text-xl font-bold text-white transition bg-purple-600 rounded-full shadow-lg hover:bg-purple-700">Book Now</a>
   </section>
 );
@@ -180,14 +180,14 @@ const AboutSection = () => (
   <section className="flex flex-col items-center w-full max-w-4xl gap-10 py-16 mx-auto md:flex-row" id="about">
     <img src={ABOUT_IMAGE} alt="About SnapBooth" className="object-cover w-full h-64 rounded-lg shadow-lg md:w-1/2 md:h-80" />
     <div className="flex-1">
-      <h2 className="mb-4 text-3xl font-bold text-gray-800 dark:text-white">About SnapBooth</h2>
-      <p className="mb-4 text-gray-700 dark:text-gray-300">Founded in 2018, SnapBooth has delivered joy to <span className="font-bold text-purple-600">200+ events</span> and printed over <span className="font-bold text-purple-600">50,000 photos</span> across Malaysia and Singapore. Our mission: make every event unforgettable with fun, interactive photo experiences.</p>
+      <h2 className="mb-4 text-3xl font-bold text-gray-800 dark:text-white">About LumeeBooth</h2>
+      <p className="mb-4 text-gray-700 dark:text-gray-300">Founded in 2016, Lumeebooth has delivered joy to <span className="font-bold text-purple-600">200+ events</span> and printed over <span className="font-bold text-purple-600">50,000 photos</span> across Metro Atlanta and the world. Our mission: make every event unforgettable with fun, interactive photo experiences.</p>
       <ul className="mb-4 text-gray-600 dark:text-gray-400">
-        <li>• 6 years running</li>
-        <li>• 200+ events served</li>
+        <li>• 8 years running</li>
+        <li>• 800+ events served</li>
         <li>• 50,000+ prints delivered</li>
       </ul>
-      <p className="italic text-gray-500 dark:text-gray-400">"We started SnapBooth to bring people together and capture memories that last a lifetime."</p>
+      <p className="italic text-gray-500 dark:text-gray-400">"We started LumeeBooth to bring people together and capture memories that last a lifetime."</p>
     </div>
   </section>
 );
@@ -218,7 +218,7 @@ const ContactSection = () => (
     <p className="mb-6 text-gray-600 dark:text-gray-300">Questions? Custom packages? Reach out or book your booth now!</p>
     <div className="flex flex-col gap-4 mb-8">
       <a href="https://wa.me/60123456789?text=Hi%20SnapBooth!%20I%20want%20to%20book." target="_blank" rel="noopener noreferrer" className="px-6 py-3 font-bold text-white transition bg-green-500 rounded-full shadow hover:bg-green-600">WhatsApp Us</a>
-      <a href="mailto:hello@snapbooth.com" className="font-semibold text-blue-600 underline">Email: hello@snapbooth.com</a>
+      <a href="mailto:hello@snapbooth.com" className="font-semibold text-blue-600 underline">Email: rentme@lumeebooth.com</a>
     </div>
     <form className="flex flex-col items-center gap-4 p-6 bg-white rounded-lg shadow dark:bg-gray-800">
       <input type="text" placeholder="Your Name" className="w-full px-4 py-3 text-center border border-gray-300 rounded dark:text-black" required />
