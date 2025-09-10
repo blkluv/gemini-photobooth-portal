@@ -4,10 +4,10 @@ import { NavLink, useNavigate } from 'react-router-dom';
 const NavBar: React.FC = () => {
   const navigate = useNavigate();
   return (
-    <nav className="w-full bg-white dark:bg-gray-900 shadow-md py-4 px-6 flex items-center justify-between sticky top-0 z-50">
+    <nav className="sticky top-0 z-50 flex items-center justify-between w-full px-6 py-4 bg-white shadow-md dark:bg-gray-900">
       <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}> 
         {/* Logo or Brand Name */}
-        <span className="text-2xl font-bold text-purple-600 dark:text-white">Snapbooth</span>
+        <span className="text-2xl font-bold text-purple-600 dark:text-white">LumeeBooth</span>
       </div>
       <div className="flex items-center gap-6">
         <NavLink to="/" className={({ isActive }) => isActive ? 'text-purple-600 font-semibold' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600'}>Home</NavLink>
@@ -17,13 +17,13 @@ const NavBar: React.FC = () => {
         <NavLink to="/contact" className={({ isActive }) => isActive ? 'text-purple-600 font-semibold' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600'}>Contact Us</NavLink>
         <button
           onClick={() => navigate('/contact')}
-          className="ml-2 bg-green-500 hover:bg-green-600 text-white font-bold px-4 py-2 rounded-full shadow transition"
+          className="px-4 py-2 ml-2 font-bold text-white transition bg-green-500 rounded-full shadow hover:bg-green-600"
         >
           Get Free Quote
         </button>
         <button
           onClick={() => navigate('/app')}
-          className="ml-2 bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2 rounded-full shadow transition"
+          className="px-4 py-2 ml-2 font-bold text-white transition bg-purple-600 rounded-full shadow hover:bg-purple-700"
         >
           Go to Photobooth
         </button>
